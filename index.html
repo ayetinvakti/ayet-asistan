@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ayetin Vakti - Yapay Zeka Asistanı</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --chat-bg: #ffffff;
+            --text-color: #1e293b;
+            --primary-color: #0d9488;
+            --bot-msg-bg: #f1f5f9;
+            --user-msg-bg: #0d9488;
+            --user-text-color: #ffffff;
+            --border-color: #e2e8f0;
+        }
+
+        body.dark {
+            --bg-color: #0f172a;
+            --chat-bg: #1e293b;
+            --text-color: #f8fafc;
+            --primary-color: #14b8a6;
+            --bot-msg-bg: #334155;
+            --user-msg-bg: #14b8a6;
+            --user-text-color: #0f172a;
+            --border-color: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            padding: 15px 20px;
+            background-color: var(--chat-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .theme-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.5;
+            font-size: 0.95rem;
+            word-wrap: break-word;
+        }
+
+        .message.bot {
+            background-color: var(--bot-msg-bg);
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+
+        .message.user {
+            background-color: var(--user-msg-bg);
+            color: var(--user-text-color);
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+
+        .input-container {
+            padding: 15px 20px;
+            background-color: var(--chat-bg);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-container input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        .input-container button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="dark">
+
+    <header>
+        <h1>🤖 Vakit Asistanı</h1>
+        <button class="theme-btn" onclick="toggleTheme()" id="themeIcon">☀️</button>
+    </header>
+
+    <div class="chat-container" id="chatContainer">
+        <div class="message bot">Selamün Aleyküm ustam! Ben Vakit Asistanı. Sana namaz vakitleri, ayetler, dualar ve uygulamayla ilgili konularda nasıl yardımcı olabilirim?</div>
+    </div>
+
+    <div class="input-container">
+        <input type="text" id="userInput" placeholder="Bir şeyler yazın..." onkeypress="handleKeyPress(event)">
+        <button onclick="sendMessage()">Gönder</button>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            document.body.classList.toggle('dark');
+            const isDark = document.body.classList.contains('dark');
+            document.getElementById('themeIcon').textContent = isDark ? '☀️' : '🌙';
+        }
+
+        function appendMessage(text, sender) {
+            const container = document.getElementById('chatContainer');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${sender}`;
+            msgDiv.textContent = text;
+            container.appendChild(msgDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function getBotResponse(input) {
+            const text = input.toLowerCase();
+            if (text.includes('selam') || text.includes('merhaba')) {
+                return "Aleykümselam ustam! Bugün sana nasıl yardımcı olabilirim?";
+            } else if (text.includes('nasıl') || text.includes('ne yapıyorsun')) {
+                return "Ayetin Vakit uygulamasını daha mükemmel hale getirmek için çalışıyorum ustam!";
+            } else if (text.includes('ayet') || text.includes('dua')) {
+                return "\"Şüphesiz kalpler ancak Allah'ı anmakla huzur bulur.\" (Ra'd, 28) 📖";
+            } else if (text.includes('namaz') || text.includes('vakit')) {
+                return "Namaz, müminin miracıdır ustam. Vakitler sayfasından bulunduğun konuma göre saatleri takip edebilirsin.";
+            } else {
+                return "Bunu kaydettim ustam! Harika bir fikir, ilerleyen güncellemelerde bunu da projeye dahil edebiliriz. Başka sormak istediğin bir şey var mı?";
+            }
+        }
+
+        function sendMessage() {
+            const inputField = document.getElementById('userInput');
+            const text = inputField.value.trim();
+            if (!text) return;
+
+            appendMessage(text, 'user');
+            inputField.value = '';
+
+            setTimeout(() => {
+                const response = getBotResponse(text);
+                appendMessage(response, 'bot');
+            }, 600);
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+    </script>
+</body>
+</html>
