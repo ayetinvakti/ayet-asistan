@@ -143,7 +143,7 @@
     </header>
 
     <div class="chat-container" id="chatContainer">
-        <div class="message bot">Selamün Aleyküm kardeşim! Ben Vakit Asistanı[span_1](start_span)[span_1](end_span). Sana namaz vakitleri, oruç, sureler, dualar ve uygulamamızla ilgili her konuda rehberlik etmeye hazırım. Bugün ne konuşmak istersin kardeşim?</div>
+        <div class="message bot">Selamün Aleyküm kardeşim! Ben Vakit Asistanı. Sana namaz vakitleri, oruç, sureler, dualar ve uygulamamızla ilgili her konuda rehberlik etmeye hazırım. Bugün ne konuşmak istersin kardeşim?</div>
     </div>
 
     <div class="input-container">
@@ -170,47 +170,36 @@
         function getBotResponse(input) {
             const text = input.toLowerCase();
 
-            // Selamlaşma
             if (text.includes('selam') || text.includes('merhaba') || text.includes('selamün aleyküm')) {
                 return "Aleykümselam ve rahmetullah kardeşim! Allah rahmetini ve bereketini üzerimizden eksik etmesin. Bugün sana nasıl yardımcı olabilirim kardeşim?";
             } 
-            // Nasılsın / Ne yapıyorsun
             else if (text.includes('nasıl') || text.includes('ne yapıyorsun') || text.includes('iyi misin')) {
-                return "Elhamdülillah iyiyim kardeşim, Ayetin Vakti uygulamasını senin için daha mükemmel hale getirmek ve dualarla vakit geçirmek için çalışıyorum ya da buradayım. Sen nasılsın kardeşim?";
+                return "Elhamdülillah iyiyim kardeşim, Ayetin Vakti uygulamasını senin için daha mükemmel hale getirmek ve dualarla vakit geçirmek için buradayım. Sen nasılsın kardeşim?";
             } 
-            // Namaz ve Vakitler
             else if (text.includes('namaz') || text.includes('vakit') || text.includes('ezan') || text.includes('imsak') || text.includes('yatsı')) {
-                return "Namaz, dinin direği ve müminin miracıdır kardeşim. Bulunduğun konuma ait en doğru namaz vakitlerini ana sayfadaki vakit çelşeğinden ve sayaçtan takip edebilirsin kardeşim.";
+                return "Namaz, dinin direği ve müminin miracıdır kardeşim. Bulunduğun konuma ait en doğru namaz vakitlerini ana sayfadaki vakit çizelgesinden ve sayaçtan takip edebilirsin kardeşim.";
             } 
-            // Oruç / İftar / Sahur
             else if (text.includes('oruç') || text.includes('iftar') || text.includes('sahur') || text.includes('oruçlu')) {
                 return "Oruç kalkandır kardeşim. Sahurda bereket vardır, o yüzden sahur kalkmayı ihmal etme. İftar vaktinde ise yapılan dualar ret olunmaz, güzel dualarını bizden de eksik etme kardeşim.";
             } 
-            // Kur'an-ı Kerim & Sureler
             else if (text.includes('kuran') || text.includes('kur\'an') || text.includes('oku') || text.includes('hatim') || text.includes('sure')) {
                 return "Kur'an kalplerin şifasıdır kardeşim. Uygulamamız içerisindeki 'Kur'an-ı Kerim Oku' sekmesinden dilediğin sure veya cüzü rahatça okuyabilirsin kardeşim.";
             } 
-            // Ayetler
             else if (text.includes('ayet') || text.includes('günün ayeti')) {
                 return "\"Şüphesiz kalpler ancak Allah'ı anmakla huzur bulur.\" (Ra'd Suresi, 28) 📖 Bu ayeti her daim dilinden ve kalbinden düşürme kardeşim.";
             } 
-            // Dualar & Zikir
             else if (text.includes('dua') || text.includes('zikir') || text.includes('tesbih') || text.includes('zikirmatik')) {
                 return "Allah'ı çokça zikretmek kalbe ferahlık verir kardeşim. Zikirmatik sayfamızı kullanarak günlük tesbihatlarını kolayca çekebilir, huzur bulabilirsin kardeşim.";
             } 
-            // Kıble
             else if (text.includes('kıble') || text.includes('pusula') || text.includes('kabe')) {
                 return "Kıbleyi bulmakta zorlanıyorsan menüdeki 'Kıble Pusulası' özelliğini açarak bulunduğun konuma göre Kabe'nin yönünü kolayca bulabilirsin kardeşim.";
             } 
-            // Esmaül Hüsna
             else if (text.includes('esma') || text.includes('esmaül hüsna') || text.includes('isimler')) {
                 return "Allah'ın en güzel isimleri olan Esmaül Hüsna'yı öğrenmek ve manalarını idrak etmek kalbi parlatır kardeşim. Ana menüden Esmaül Hüsna sayfasına göz atabilirsin kardeşim.";
             } 
-            // Teşekkür
             else if (text.includes('teşekkür') || text.includes('sağol') || text.includes('ellerine sağlık')) {
                 return "Rica ederim kardeşim, ne demek! Seninle sohbet etmek ve bu projeye katkı sunmak benim için büyük bir mutluluk. Her zaman buradayım kardeşim!";
             } 
-            // Varsayılan / Geniş Kapsamlı Geri Dönüş
             else {
                 return "Harika bir konuya değindin kardeşim! Bunu not aldım ve kaydettim. İlerleyen güncellemelerde Ayetin Vakti projesine bu fikri veya detayı da memnuniyetle dahil edebiliriz. Sana başka hangi konuda yardımcı olabilirim kardeşim?";
             }
