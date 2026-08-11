@@ -143,11 +143,11 @@
     </header>
 
     <div class="chat-container" id="chatContainer">
-        <div class="message bot">Selamün Aleyküm kardeşim! Ben Vakit Asistanı. Sana namaz vakitleri, oruç, sureler, dualar ve uygulamamızla ilgili her konuda rehberlik etmeye hazırım. Bugün ne konuşmak istersin kardeşim?</div>
+        <div class="message bot">Selamün Aleyküm kardeşim! Ben Vakit Asistanı. Sana namaz vakitleri, oruç, abdest, sureler, dualar, zekat ve dini konulardaki tüm sorularında rehberlik etmeye hazırım. Bugün ne konuşmak istersin kardeşim?</div>
     </div>
 
     <div class="input-container">
-        <input type="text" id="userInput" placeholder="Bir şeyler yazın..." autocomplete="off" onkeypress="handleKeyPress(event)">
+        <input type="text" id="userInput" placeholder="Dini bir soru sorun ya da sohbet edin..." autocomplete="off" onkeypress="handleKeyPress(event)">
         <button onclick="sendMessage()">Gönder</button>
     </div>
 
@@ -170,38 +170,90 @@
         function getBotResponse(input) {
             const text = input.toLowerCase();
 
+            // 1. Selamlaşma & Hal Hatır
             if (text.includes('selam') || text.includes('merhaba') || text.includes('selamün aleyküm')) {
-                return "Aleykümselam ve rahmetullah kardeşim! Allah rahmetini ve bereketini üzerimizden eksik etmesin. Bugün sana nasıl yardımcı olabilirim kardeşim?";
+                return "Aleykümselam ve rahmetullah kardeşim! Allah rahmetini ve bereketini üzerimizden eksik etmesin. Bugün sana dini konularda nasıl yardımcı olabilirim?";
             } 
             else if (text.includes('nasıl') || text.includes('ne yapıyorsun') || text.includes('iyi misin')) {
-                return "Elhamdülillah iyiyim kardeşim, Ayetin Vakti uygulamasını senin için daha mükemmel hale getirmek ve dualarla vakit geçirmek için buradayım. Sen nasılsın kardeşim?";
+                return "Elhamdülillah iyiyim kardeşim, Ayetin Vakti uygulamasını senin için daha mükemmel hale getirmek ve ilmi paylaşımlar yapmak için buradayım. Sen nasılsın kardeşim?";
             } 
-            else if (text.includes('namaz') || text.includes('vakit') || text.includes('ezan') || text.includes('imsak') || text.includes('yatsı')) {
-                return "Namaz, dinin direği ve müminin miracıdır kardeşim. Bulunduğun konuma ait en doğru namaz vakitlerini ana sayfadaki vakit çizelgesinden ve sayaçtan takip edebilirsin kardeşim.";
+
+            // 2. Namaz ve Vakitler
+            else if (text.includes('namaz') || text.includes('vakit') || text.includes('ezan') || text.includes('imsak') || text.includes('yatsı') || text.includes('ikindi') || text.includes('öğle')) {
+                return "Namaz, dinin direği ve müminin miracıdır kardeşim. Bulunduğun konuma ait en doğru namaz vakitlerini ana sayfadaki vakit çizelgesinden ve sayaçtan takip edebilirsin. Kazaya kalan namazların varsa kaza namazı kılmayı da ihmal etme kardeşim.";
             } 
+            else if (text.includes('kaza') || text.includes('kaza namazı')) {
+                return "Geçmişte kılınamayan namazlar için kaza namazı kılmak borç ödemek gibidir kardeşim. Her vakit namazının ardından ya da sünnetler yerine kaza namazı kılarak borçlarını kapatabilirsin.";
+            }
+
+            // 3. Oruç ve İbadetler
             else if (text.includes('oruç') || text.includes('iftar') || text.includes('sahur') || text.includes('oruçlu')) {
-                return "Oruç kalkandır kardeşim. Sahurda bereket vardır, o yüzden sahur kalkmayı ihmal etme. İftar vaktinde ise yapılan dualar ret olunmaz, güzel dualarını bizden de eksik etme kardeşim.";
+                return "Oruç kalkandır kardeşim. Sahurda bereket vardır, o yüzden sahur yapmayı ihmal etme. İftar vaktinde yapılan dualar reddolunmaz, güzel dualarını bizden de eksik etme kardeşim.";
             } 
+            else if (text.includes('hac') || text.includes('umre') || text.includes('kabe')) {
+                return "Hac ve umre, Müslüman'ın kutsal yolculuğudur kardeşim. Kıble yönünü bulmak istersen menüdeki 'Kıble Pusulası' özelliğini kullanabilirsin. Rabbim en kısa zamanda orayı gitmeyi nasip etsin.";
+            }
+            else if (text.includes('zekat') || text.includes('sadaka') || text.includes('fitre')) {
+                return "Zekat ve sadaka malı arındırır, bolluk ve bereket getirir kardeşim. Nisap miktarı malı olanların ihtiyaç sahiplerine zekat vermesi İslam'ın temel şartlarındandır.";
+            }
+
+            // 4. Abdest, Gusül ve Temizlik
+            else if (text.includes('abdest') || text.includes('abdest nasıl') || text.includes('abdesti bozan')) {
+                return "Abdest namazın anahtarıdır kardeşim. Abdest almak için eller yıkanır, ağız ve burna su verilir, yüz yıkanır, kollar dirseklerle beraber mesh edilir, baş ve kulaklar meshedilip ayaklar yıkanır. Tuvalet ihtiyacı, bayılma, uyuklama veya kanama gibi durumlar abdesti bozar.";
+            }
+            else if (text.includes('gusül') || text.includes('boy abdesti') || text.includes('cünüp')) {
+                return "Gusül abdesti (boy abdesti); ağza ve burna bolca su vererek boğaza kadar çalkalamak ve tüm vücutta iğne ucu kadar kuru yer kalmayacak şekilde yıkanmaktır kardeşim. Cünüp olunan durumlarda farzdır.";
+            }
+            else if (text.includes('teyemmüm')) {
+                return "Su bulunamadığı veya suyu kullanma imkanı olmadığı durumlarda toprak veya toprak cinsinden temiz bir şeye eller vurularak yüzü ve kolları mesh etmeye teyemmüm denir kardeşim.";
+            }
+
+            // 5. Kur'an-ı Kerim, Ayet ve Sureler
             else if (text.includes('kuran') || text.includes('kur\'an') || text.includes('oku') || text.includes('hatim') || text.includes('sure')) {
-                return "Kur'an kalplerin şifasıdır kardeşim. Uygulamamız içerisindeki 'Kur'an-ı Kerim Oku' sekmesinden dilediğin sure veya cüzü rahatça okuyabilirsin kardeşim.";
+                return "Kur'an kalplerin şifasıdır kardeşim. Uygulamamız içerisindeki 'Kur'an-ı Kerim Oku' sekmesinden dilediğin sure veya cüzü Arapça, meal veya sesli olarak rahatça okuyabilirsin kardeşim.";
             } 
             else if (text.includes('ayet') || text.includes('günün ayeti')) {
                 return "\"Şüphesiz kalpler ancak Allah'ı anmakla huzur bulur.\" (Ra'd Suresi, 28) 📖 Bu ayeti her daim dilinden ve kalbinden düşürme kardeşim.";
             } 
+            else if (text.includes('yasin') || text.includes('mülk') || text.includes('fetih') || text.includes('amel') || text.includes('kevser') || text.includes('ihlas')) {
+                return "Sureler Kur'an'ın nurlu çiçekleridir kardeşim. Okuduğun her harf için en az 10 sevap vardır. Kur'an menüsünden dilediğin sureye kolayca ulaşabilirsin.";
+            }
+
+            // 6. Dua, Zikir ve Esmaül Hüsna
             else if (text.includes('dua') || text.includes('zikir') || text.includes('tesbih') || text.includes('zikirmatik')) {
                 return "Allah'ı çokça zikretmek kalbe ferahlık verir kardeşim. Zikirmatik sayfamızı kullanarak günlük tesbihatlarını kolayca çekebilir, huzur bulabilirsin kardeşim.";
             } 
-            else if (text.includes('kıble') || text.includes('pusula') || text.includes('kabe')) {
+            else if (text.includes('esma') || text.includes('esmaül hüsna') || text.includes('isimler')) {
+                return "Allah'ın en güzel isimleri olan Esmaül Hüsna'yı öğrenmek ve manalarını idrak etmek kalbi parlatır kardeşim. Ana menüden Esmaül Hüsna sayfasına göz atabilirsin kardeşim. (Örn: El-Gafur, Er-Rahman, El-Hâlık...)";
+            } 
+            else if (text.includes('tövbe') || text.includes('istiğfar')) {
+                return "Allah Teala kulunun tövbesinden son derece memnun olur kardeşim. 'Estağfirullah el-azim ve etubü ileyh' diyerek her daim tövbe ve istiğfarda bulunabilirsin.";
+            }
+
+            // 7. Peygamberler ve Dini Tarih
+            else if (text.includes('peygamber') || text.includes('hz. muhammed') || text.includes('resulullah')) {
+                return "Peygamber Efendimiz Hz. Muhammed (s.a.v.) alemlere rahmet olarak gönderilmiştir kardeşim. O'nun sünnetine uymak, ahlakıyla ahlaklanmak iki cihanda saadet getirir.";
+            }
+            else if (text.includes('sahabe') || text.includes('ashap')) {
+                return "Sahabeler Peygamberimizin yıldızlar gibidir, hangisine uyarsanız hidayete erersiniz buyrulmuştur kardeşim. Onların hayatı İslam'ın en güzel örnekleridir.";
+            }
+
+            // 8. Uygulama İçi Rehberlik
+            else if (text.includes('kıble') || text.includes('pusula')) {
                 return "Kıbleyi bulmakta zorlanıyorsan menüdeki 'Kıble Pusulası' özelliğini açarak bulunduğun konuma göre Kabe'nin yönünü kolayca bulabilirsin kardeşim.";
             } 
-            else if (text.includes('esma') || text.includes('esmaül hüsna') || text.includes('isimler')) {
-                return "Allah'ın en güzel isimleri olan Esmaül Hüsna'yı öğrenmek ve manalarını idrak etmek kalbi parlatır kardeşim. Ana menüden Esmaül Hüsna sayfasına göz atabilirsin kardeşim.";
-            } 
+            else if (text.includes('dini günler') || text.includes('kandil') || text.includes('bayram')) {
+                return "Kandiller ve dini günler manevi hayatımızın dönüm noktalarıdır kardeşim. Uygulamamızdaki 'Dini Günler' sekmesinden yıl içerisindeki tüm kandil ve mübarek geceleri takip edebilirsin.";
+            }
+
+            // 9. Teşekkür & Kapanış
             else if (text.includes('teşekkür') || text.includes('sağol') || text.includes('ellerine sağlık')) {
                 return "Rica ederim kardeşim, ne demek! Seninle sohbet etmek ve bu projeye katkı sunmak benim için büyük bir mutluluk. Her zaman buradayım kardeşim!";
             } 
+
+            // 10. Bilinmeyen / Genel Not Alma
             else {
-                return "Harika bir konuya değindin kardeşim! Bunu not aldım ve kaydettim. İlerleyen güncellemelerde Ayetin Vakti projesine bu fikri veya detayı da memnuniyetle dahil edebiliriz. Sana başka hangi konuda yardımcı olabilirim kardeşim?";
+                return "Harika ve çok önemli bir konuya değindin kardeşim! Bunu hafızama not aldım. İlerleyen güncellemelerde Ayetin Vakti projesine bu detayı da memnuniyetle dahil edebiliriz. Sana başka hangi dini konuda yardımcı olabilirim kardeşim?";
             }
         }
 
