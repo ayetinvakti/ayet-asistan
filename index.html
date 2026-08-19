@@ -4,8 +4,52 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ayetin Vakti - Yapay Zeka Asistanı</title>
+    
+    <!-- Titremesiz Tema, Renk Hafızası ve Dil Entegrasyonu -->
+    <script>
+        // 1. Dil Ayarını Yükle (user_lang ile senkronize)
+        const savedLang = localStorage.getItem('user_lang') || 'tr';
+        document.documentElement.lang = savedLang;
+        if (savedLang === 'ar') {
+            document.documentElement.dir = 'rtl';
+        }
+
+        // 2. Tema Ayarını Yükle
+        const savedTheme = localStorage.getItem('theme');
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (savedTheme === 'light' || (!savedTheme && !systemPrefersDark)) {
+            document.documentElement.classList.add('light-mode');
+        }
+
+        // 3. Özel Renk Paletini Yükle
+        const customBg = localStorage.getItem('custom_bg');
+        const customCard = localStorage.getItem('custom_card');
+        const customText = localStorage.getItem('custom_text');
+        const customAccent = localStorage.getItem('custom_accent');
+
+        if (customBg) document.documentElement.style.setProperty('--bg-color', customBg);
+        if (customCard) document.documentElement.style.setProperty('--chat-bg', customCard);
+        if (customText) document.documentElement.style.setProperty('--text-color', customText);
+        if (customAccent) {
+            document.documentElement.style.setProperty('--primary-color', customAccent);
+            document.documentElement.style.setProperty('--user-msg-bg', customAccent);
+        }
+    </script>
+
     <style>
         :root {
+            --bg-color: #0f172a;
+            --chat-bg: #1e293b;
+            --text-color: #f8fafc;
+            --primary-color: #14b8a6;
+            --bot-msg-bg: #334155;
+            --user-msg-bg: #14b8a6;
+            --user-text-color: #0f172a;
+            --border-color: #334155;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        html.light-mode {
             --bg-color: #f8fafc;
             --chat-bg: #ffffff;
             --text-color: #1e293b;
@@ -16,22 +60,16 @@
             --border-color: #e2e8f0;
         }
 
-        body.dark {
-            --bg-color: #0f172a;
-            --chat-bg: #1e293b;
-            --text-color: #f8fafc;
-            --primary-color: #14b8a6;
-            --bot-msg-bg: #334155;
-            --user-msg-bg: #14b8a6;
-            --user-text-color: #0f172a;
-            --border-color: #334155;
+        /* RTL (Arapça) Font Uyumluluğu */
+        html[lang="ar"] {
+            --font-family: 'Amiri', 'Traditional Arabic', serif;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: var(--font-family);
         }
 
         body {
@@ -42,6 +80,7 @@
             height: 100vh;
             height: 100dvh;
             overflow: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         header {
@@ -61,11 +100,27 @@
             gap: 8px;
         }
 
-        .theme-btn {
+        .nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-btn {
             background: none;
             border: none;
             cursor: pointer;
             font-size: 1.2rem;
+            color: var(--text-color);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* RTL İçin Geri Butonu Yönü */
+        html[dir="rtl"] #back-btn {
+            transform: scaleX(-1);
         }
 
         .chat-container {
@@ -100,7 +155,17 @@
             border-bottom-right-radius: 2px;
         }
 
-        /* Sabit ve Düzgün Hizalanmış Hazır Soru Çipleri */
+        /* RTL Mesaj Hizalama Ayarları */
+        html[dir="rtl"] .message.bot {
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 2px;
+        }
+
+        html[dir="rtl"] .message.user {
+            border-bottom-right-radius: 12px;
+            border-bottom-left-radius: 2px;
+        }
+
         .suggestions-container {
             display: flex;
             gap: 8px;
@@ -169,39 +234,121 @@
         }
     </style>
 </head>
-<body class="dark">
+<body>
 
     <header>
-        <h1>🤖 Vakit Asistanı</h1>
-        <button class="theme-btn" onclick="toggleTheme()" id="themeIcon">☀️</button>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <a href="index.html" class="nav-btn" id="back-btn" title="Geri">←</a>
+            <h1 id="header-title">🤖 Vakit Asistanı</h1>
+        </div>
+        <div class="nav-controls">
+            <button class="nav-btn" onclick="toggleTheme()" id="themeIcon">☀️</button>
+        </div>
     </header>
 
     <div class="chat-container" id="chatContainer">
-        <div class="message bot">Selamün Aleyküm kardeşim! Ben Vakit Asistanı. Sana namaz vakitleri, oruç, abdest, sureler, dualar, zekat ve dini konulardaki tüm sorularında rehberlik etmeye hazırım. Aşağıdaki hazır seçenekleri kullanabilir veya dilediğini sorabilirsin!</div>
+        <!-- Karşılama mesajı JS tarafından dile göre yüklenecek -->
     </div>
 
     <!-- Hazır Soru Seçenekleri Çubuğu -->
-    <div class="suggestions-container">
-        <button class="suggestion-chip" onclick="sendSuggestion('Namaz vakitleri nasıl hesaplanıyor?')">⏰ Namaz Vakitleri</button>
-        <button class="suggestion-chip" onclick="sendSuggestion('Abdest nasıl alınır?')">💧 Abdest Nasıl Alınır?</button>
-        <button class="suggestion-chip" onclick="sendSuggestion('Günün ayeti nedir?')">📖 Günün Ayeti</button>
-        <button class="suggestion-chip" onclick="sendSuggestion('Zekat kimlere verilir?')">🤲 Zekat ve Sadaka</button>
-        <button class="suggestion-chip" onclick="sendSuggestion('Kıbleyi nasıl bulabilirim?')">🧭 Kıble Pusulası</button>
-        <button class="suggestion-chip" onclick="sendSuggestion('Esmaül Hüsna nedir?')">✨ Esmaül Hüsna</button>
+    <div class="suggestions-container" id="suggestionsContainer">
+        <!-- Çipler JS tarafından dile göre yüklenecek -->
     </div>
 
     <div class="input-container">
-        <input type="text" id="userInput" placeholder="Dini bir soru sorun ya da sohbet edin..." autocomplete="off" onkeypress="handleKeyPress(event)">
-        <button onclick="sendMessage()">Gönder</button>
+        <input type="text" id="userInput" placeholder="..." autocomplete="off" onkeypress="handleKeyPress(event)">
+        <button id="send-btn" onclick="sendMessage()">Gönder</button>
     </div>
 
     <script>
-        function toggleTheme() {
-            document.body.classList.toggle('dark');
-            const isDark = document.body.classList.contains('dark');
-            document.getElementById('themeIcon').textContent = isDark ? '☀️' : '🌙';
+        // --- 1. ÇOKLU DİL VE SÖZLÜK TANIMLARI ---
+        const uiTranslations = {
+            tr: {
+                docTitle: "Ayetin Vakti - Yapay Zeka Asistanı",
+                headerTitle: "🤖 Vakit Asistanı",
+                inputPlaceholder: "Dini bir soru sorun ya da sohbet edin...",
+                sendBtn: "Gönder",
+                welcomeMsg: "Selamün Aleyküm kardeşim! Ben Vakit Asistanı. Sana namaz vakitleri, oruç, abdest, sureler, dualar, zekat ve dini konulardaki tüm sorularında rehberlik etmeye hazırım. Aşağıdaki hazır seçenekleri kullanabilir veya dilediğini sorabilirsin!",
+                suggestions: [
+                    { label: "⏰ Namaz Vakitleri", query: "Namaz vakitleri nasıl hesaplanıyor?" },
+                    { label: "💧 Abdest Nasıl Alınır?", query: "Abdest nasıl alınır?" },
+                    { label: "📖 Günün Ayeti", query: "Günün ayeti nedir?" },
+                    { label: "🤲 Zekat ve Sadaka", query: "Zekat kimlere verilir?" },
+                    { label: "🧭 Kıble Pusulası", query: "Kıbleyi nasıl bulabilirim?" },
+                    { label: "✨ Esmaül Hüsna", query: "Esmaül Hüsna nedir?" }
+                ]
+            },
+            en: {
+                docTitle: "Time of Ayah - AI Assistant",
+                headerTitle: "🤖 Time Assistant",
+                inputPlaceholder: "Ask a religious question or chat...",
+                sendBtn: "Send",
+                welcomeMsg: "Assalamu Alaikum my brother/sister! I am Time Assistant. I am ready to guide you on prayer times, fasting, ablution, surahs, prayers, zakat, and all religious topics. You can use the quick options below or ask anything you like!",
+                suggestions: [
+                    { label: "⏰ Prayer Times", query: "How are prayer times calculated?" },
+                    { label: "💧 How to Perform Wudu?", query: "How to perform wudu?" },
+                    { label: "📖 Verse of the Day", query: "What is the verse of the day?" },
+                    { label: "🤲 Zakat & Charity", query: "Who should receive zakat?" },
+                    { label: "🧭 Qibla Compass", query: "How can I find the Qibla?" },
+                    { label: "✨ Asma-ul Husna", query: "What is Asma-ul Husna?" }
+                ]
+            },
+            ar: {
+                docTitle: "وقت الآية - المساعد الذكي",
+                headerTitle: "🤖 مساعد الوقت",
+                inputPlaceholder: "إسأل سؤالاً دينياً أو تحدث معي...",
+                sendBtn: "إرسال",
+                welcomeMsg: "السلام عليكم ورحمة الله وبركاته يا أخي! أنا مساعد الوقت. أنا مستعد لإرشادك بشأن أوقات الصلاة، الصيام، الوضوء، السور، الأدعية، الزكاة وجميع المواضيع الدينية. يمكنك استخدام الخيارات السريعة أدناه أو سؤال أي شيء تريد!",
+                suggestions: [
+                    { label: "⏰ مواقيت الصلاة", query: "كيف يتم حساب مواقيت الصلاة؟" },
+                    { label: "💧 كيفية الوضوء؟", query: "كيف أتوضأ؟" },
+                    { label: "📖 آية اليوم", query: "ما هي آية اليوم؟" },
+                    { label: "🤲 الزكاة والصدقة", query: "من هم مستحقو الزكاة؟" },
+                    { label: "🧭 بوصلة القبلة", query: "كيف أجد اتجاه القبلة؟" },
+                    { label: "✨ أسماء الله الحسنى", query: "ما هي أسماء الله الحسنى؟" }
+                ]
+            }
+        };
+
+        const currentLang = localStorage.getItem('user_lang') || 'tr';
+        const t = uiTranslations[currentLang] || uiTranslations.tr;
+
+        // --- 2. ARAYÜZÜ DİLE GÖRE DOLDURMA ---
+        function initUI() {
+            document.title = t.docTitle;
+            document.getElementById('header-title').textContent = t.headerTitle;
+            document.getElementById('userInput').placeholder = t.inputPlaceholder;
+            document.getElementById('send-btn').textContent = t.sendBtn;
+
+            // İlk Hoş Geldiniz Mesajını Ekle
+            appendMessage(t.welcomeMsg, 'bot');
+
+            // Çipleri Doldur
+            const sugContainer = document.getElementById('suggestionsContainer');
+            sugContainer.innerHTML = '';
+            t.suggestions.forEach(item => {
+                const btn = document.createElement('button');
+                btn.className = 'suggestion-chip';
+                btn.textContent = item.label;
+                btn.onclick = () => sendSuggestion(item.query);
+                sugContainer.appendChild(btn);
+            });
         }
 
+        // --- 3. TEMA YÖNETİMİ ---
+        function updateThemeIcon() {
+            const isLight = document.documentElement.classList.contains('light-mode');
+            document.getElementById('themeIcon').textContent = isLight ? '☀️' : '🌙';
+        }
+
+        function toggleTheme() {
+            document.documentElement.classList.toggle('light-mode');
+            const isLight = document.documentElement.classList.contains('light-mode');
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            updateThemeIcon();
+        }
+
+        // --- 4. SOHBET VE DİNAMİK CEVAP MOTORU ---
         function appendMessage(text, sender) {
             const container = document.getElementById('chatContainer');
             const msgDiv = document.createElement('div');
@@ -217,77 +364,6 @@
                 const response = getBotResponse(text);
                 appendMessage(response, 'bot');
             }, 600);
-        }
-
-        function getBotResponse(input) {
-            const text = input.toLowerCase();
-
-            // 1. Namaz ve Vakitler (Önce kontrol ediliyor ki 'nasıl' kelimesine takılmasın)
-            if (text.includes('namaz') || text.includes('vakit') || text.includes('ezan') || text.includes('imsak') || text.includes('yatsı') || text.includes('ikindi') || text.includes('öğle')) {
-                return "Namaz, dinin direği ve müminin miracıdır kardeşim. Bulunduğun konuma ait en doğru namaz vakitlerini ana sayfadaki vakit çizelgesinden ve sayaçtan takip edebilirsin. Kazaya kalan namazların varsa kaza namazı kılmayı da ihmal etme kardeşim.";
-            } 
-            else if (text.includes('kaza') || text.includes('kaza namazı')) {
-                return "Geçmişte kılınamayan namazlar için kaza namazı kılmak borç ödemek gibidir kardeşim. Her vakit namazının ardından ya da sünnetler yerine kaza namazı kılarak borçlarını kapatabilirsin.";
-            }
-
-            // 2. Abdest ve Temizlik
-            else if (text.includes('abdest') || text.includes('abdesti bozan')) {
-                return "Abdest namazın anahtarıdır kardeşim. Abdest almak için eller yıkanır, ağız ve burna su verilir, yüz yıkanır, kollar dirseklerle beraber mesh edilir, baş ve kulaklar meshedilip ayaklar yıkanır. Tuvalet ihtiyacı, bayılma, uyuklama veya kanama gibi durumlar abdesti bozar.";
-            }
-            else if (text.includes('gusül') || text.includes('boy abdesti') || text.includes('cünüp')) {
-                return "Gusül abdesti (boy abdesti); ağza ve burna bolca su vererek boğaza kadar çalkalamak ve tüm vücutta iğne ucu kadar kuru yer kalmayacak şekilde yıkanmaktır kardeşim. Cünüp olunan durumlarda farzdır.";
-            }
-            else if (text.includes('teyemmüm')) {
-                return "Su bulunamadığı veya suyu kullanma imkanı olmadığı durumlarda toprak veya toprak cinsinden temiz bir şeye eller vurularak yüzü ve kolları mesh etmeye teyemmüm denir kardeşim.";
-            }
-
-            // 3. Selamlaşma & Hal Hatır (Daha spesifik hale getirildi)
-            else if (text === 'selam' || text === 'merhaba' || text.includes('selamün aleyküm') || text.includes('aleykümselam')) {
-                return "Aleykümselam ve rahmetullah kardeşim! Allah rahmetini ve bereketini üzerimizden eksik etmesin. Bugün sana dini konularda nasıl yardımcı olabilirim?";
-            } 
-            else if (text.includes('ne yapıyorsun') || text.includes('iyi misin')) {
-                return "Elhamdülillah iyiyim kardeşim, Ayetin Vakti uygulamasını senin için daha mükemmel hale getirmek ve ilmi paylaşımlar yapmak için buradayım. Sen nasılsın kardeşim?";
-            } 
-
-            // 4. Oruç ve Diğer İbadetler
-            else if (text.includes('oruç') || text.includes('iftar') || text.includes('sahur') || text.includes('oruçlu')) {
-                return "Oruç kalkandır kardeşim. Sahurda bereket vardır, o yüzden sahur yapmayı ihmal etme. İftar vaktinde yapılan dualar reddolunmaz, güzel dualarını bizden de eksik etme kardeşim.";
-            } 
-            else if (text.includes('hac') || text.includes('umre') || text.includes('kabe')) {
-                return "Hac ve umre, Müslüman'ın kutsal yolculuğudur kardeşim. Kıble yönünü bulmak istersen menüdeki 'Kıble Pusulası' özelliğini kullanabilirsin. Rabbim en kısa zamanda orayı gitmeyi nasip etsin.";
-            }
-            else if (text.includes('zekat') || text.includes('sadaka') || text.includes('fitre')) {
-                return "Zekat ve sadaka malı arındırır, bolluk ve bereket getirir kardeşim. Nisap miktarı malı olanların ihtiyaç sahiplerine zekat vermesi İslam'ın temel şartlarındandır.";
-            }
-
-            // 5. Kur'an-ı Kerim, Ayet ve Sureler
-            else if (text.includes('kuran') || text.includes('kur\'an') || text.includes('oku') || text.includes('hatim') || text.includes('sure')) {
-                return "Kur'an kalplerin şifasıdır kardeşim. Uygulamamız içerisindeki 'Kur'an-ı Kerim Oku' sekmesinden dilediğin sure veya cüzü Arapça, meal veya sesli olarak rahatça okuyabilirsin kardeşim.";
-            } 
-            else if (text.includes('ayet') || text.includes('günün ayeti')) {
-                return "\"Şüphesiz kalpler ancak Allah'ı anmakla huzur bulur.\" (Ra'd Suresi, 28) 📖 Bu ayeti her daim dilinden ve kalbinden düşürme kardeşim.";
-            } 
-
-            // 6. Dua, Zikir ve Esmaül Hüsna
-            else if (text.includes('dua') || text.includes('zikir') || text.includes('tesbih') || text.includes('zikirmatik')) {
-                return "Allah'ı çokça zikretmek kalbe ferahlık verir kardeşim. Zikirmatik sayfamızı kullanarak günlük tesbihatlarını kolayca çekebilir, huzur bulabilirsin kardeşim.";
-            } 
-            else if (text.includes('esma') || text.includes('esmaül hüsna') || text.includes('isimler')) {
-                return "Allah'ın en güzel isimleri olan Esmaül Hüsna'yı öğrenmek ve manalarını idrak etmek kalbi parlatır kardeşim. Ana menüden Esmaül Hüsna sayfasına göz atabilirsin kardeşim. (Örn: El-Gafur, Er-Rahman, El-Hâlık...)";
-            } 
-
-            // 7. Uygulama İçi Rehberlik
-            else if (text.includes('kıble') || text.includes('pusula')) {
-                return "Kıbleyi bulmakta zorlanıyorsan menüdeki 'Kıble Pusulası' özelliğini açarak bulunduğun konuma göre Kabe'nin yönünü kolayca bulabilirsin kardeşim.";
-            } 
-            else if (text.includes('teşekkür') || text.includes('sağol') || text.includes('ellerine sağlık')) {
-                return "Rica ederim kardeşim, ne demek! Seninle sohbet etmek ve bu projeye katkı sunmak benim için büyük bir mutluluk. Her zaman buradayım kardeşim!";
-            } 
-
-            // 8. Varsayılan
-            else {
-                return "Harika ve çok önemli bir konuya değindin kardeşim! Bunu hafızama not aldım. İlerleyen güncellemelerde Ayetin Vakti projesine bu detayı da memnuniyetle dahil edebiliriz. Sana başka hangi dini konuda yardımcı olabilirim kardeşim?";
-            }
         }
 
         function sendMessage() {
@@ -309,6 +385,92 @@
                 sendMessage();
             }
         }
+
+        // --- 5. ÜÇ DİLDE AKILLI CEVAP MEKANİZMASI ---
+        function getBotResponse(input) {
+            const text = input.toLowerCase();
+
+            // === TÜRKÇE CEVAPLAR ===
+            if (currentLang === 'tr') {
+                if (text.includes('namaz') || text.includes('vakit') || text.includes('ezan') || text.includes('imsak') || text.includes('yatsı') || text.includes('ikindi') || text.includes('öğle')) {
+                    return "Namaz, dinin direği ve müminin miracıdır kardeşim. Bulunduğun konuma ait en doğru namaz vakitlerini ana sayfadaki vakit çizelgesinden takip edebilirsin.";
+                } else if (text.includes('kaza')) {
+                    return "Geçmişte kılınamayan namazlar için kaza namazı kılmak borç ödemek gibidir. Her vakit namazının ardından kaza namazı kılarak borçlarını kapatabilirsin kardeşim.";
+                } else if (text.includes('abdest')) {
+                    return "Abdest namazın anahtarıdır. Eller, ağız, burun, yüz ve kollar dirseklerle yıkanır, baş ve kulaklar meshedilip ayaklar yıkanır. Tuvalet ihtiyacı veya kanama gibi durumlar abdesti bozar.";
+                } else if (text.includes('gusül') || text.includes('boy abdesti')) {
+                    return "Gusül abdesti; ağza ve burna bolca su verip tüm vücudu iğne ucu kadar kuru yer kalmayacak şekilde yıkamaktır kardeşim.";
+                } else if (text.includes('selam') || text.includes('merhaba')) {
+                    return "Aleykümselam ve rahmetullah kardeşim! Bugün sana dini konularda nasıl yardımcı olabilirim?";
+                } else if (text.includes('oruç') || text.includes('sahur') || text.includes('iftar')) {
+                    return "Oruç kalkandır kardeşim. Sahurda bereket vardır, ibadetlerini huzurla eda etmeni dilerim.";
+                } else if (text.includes('zekat') || text.includes('sadaka')) {
+                    return "Zekat ve sadaka malı arındırır, bereket getirir kardeşim. Nisap miktarı malı olanların ihtiyaç sahiplerine zekat vermesi farzdır.";
+                } else if (text.includes('kuran') || text.includes('ayet')) {
+                    return "\"Şüphesiz kalpler ancak Allah'ı anmakla huzur bulur.\" (Ra'd Suresi, 28) 📖 Uygulamamızın Kur'an bölümünden dilediğin sureyi okuyabilirsin.";
+                } else if (text.includes('kıble') || text.includes('pusula')) {
+                    return "Kıble yönünü bulmak için menüdeki 'Kıble Pusulası' özelliğini kullanabilirsin kardeşim.";
+                } else if (text.includes('esma')) {
+                    return "Esmaül Hüsna, Allah'ın 99 güzel ismidir. Ana menüden Esmaül Hüsna sayfasına göz atabilirsin kardeşim.";
+                } else {
+                    return "Harika ve önemli bir soru kardeşim! Bunu not aldım. Sana başka hangi dini konuda yardımcı olabilirim?";
+                }
+            }
+
+            // === İNGİLİZCE CEVAPLAR (ENGLISH) ===
+            else if (currentLang === 'en') {
+                if (text.includes('namaz') || text.includes('prayer') || text.includes('time') || text.includes('fajr') || text.includes('dhuhr') || text.includes('asr') || text.includes('maghrib') || text.includes('isha')) {
+                    return "Prayer is the pillar of religion, my brother/sister. You can track the most accurate prayer times for your location on our home page.";
+                } else if (text.includes('wudu') || text.includes('ablution')) {
+                    return "Wudu is the key to prayer. Wash hands, mouth, nose, face, and arms up to elbows, wipe head and ears, and wash feet.";
+                } else if (text.includes('ghusl') || text.includes('bath')) {
+                    return "Ghusl involves rinsing mouth, nose, and washing the entire body thoroughly leaving no dry spot.";
+                } else if (text.includes('hello') || text.includes('hi') || text.includes('salam')) {
+                    return "Wa Alaikum Assalam! How can I assist you with religious matters today?";
+                } else if (text.includes('fasting') || text.includes('ramadan') || text.includes('suhoor') || text.includes('iftar')) {
+                    return "Fasting is a shield. Remember to have suhoor as it carries blessings. May Allah accept your worship.";
+                } else if (text.includes('zakat') || text.includes('charity')) {
+                    return "Zakat purifies wealth and brings abundance. Giving zakat to those in need is an essential obligation in Islam.";
+                } else if (text.includes('quran') || text.includes('verse') || text.includes('ayah')) {
+                    return "\"Unquestionably, by the remembrance of Allah hearts find rest.\" (Surah Ar-Ra'd, 28) 📖 You can read Surahs from our Quran section.";
+                } else if (text.includes('qibla') || text.includes('compass')) {
+                    return "You can easily find the direction of Kabaa using the 'Qibla Compass' feature in the menu.";
+                } else if (text.includes('asma') || text.includes('names')) {
+                    return "Asma-ul Husna are the 99 beautiful names of Allah. Check out the Asma-ul Husna page in the main menu!";
+                } else {
+                    return "That is a great and important topic! I have noted it down. How else can I assist you today?";
+                }
+            }
+
+            // === ARAPÇA CEVAPLAR (ARABIC) ===
+            else if (currentLang === 'ar') {
+                if (text.includes('صلاة') || text.includes('وقت') || text.includes('أذان') || text.includes('فجر') || text.includes('ظهر') || text.includes('عصر') || text.includes('مغرب') || text.includes('عشاء')) {
+                    return "الصلاة عماد الدين ومعراج المؤمن يا أخي. يمكنك متابعة أدق مواقيت الصلاة لموقعك من الصفحة الرئيسية.";
+                } else if (text.includes('وضوء') || text.includes('أتوضأ')) {
+                    return "الوضوء مفتاح الصلاة. يتم غسل اليدين، الفم، الأنف، الوجه، واليدين إلى المرفقين، ومسح الرأس والأنفين وغسل القدمين.";
+                } else if (text.includes('غسل') || text.includes('الجنابة')) {
+                    return "الغسل يتضمن المضمضة والاستنشاق وغسل الجسد كاملاً دون ترك أي جزء جاف.";
+                } else if (text.includes('سلام') || text.includes('مرحبا') || text.includes('أهلا')) {
+                    return "وعليكم السلام ورحمة الله وبركاته يا أخي! كيف يمكنني مساعدتك في الأمور الدينية اليوم؟";
+                } else if (text.includes('صوم') || text.includes('صيام') || text.includes('سحور') || text.includes('إفطار')) {
+                    return "الصوم جنة ووقاية. التسحر فيه بركة، تقبل الله طاعاتكم وصالح أعمالكم.";
+                } else if (text.includes('زكاة') || text.includes('صدقة')) {
+                    return "الزكاة تطهر المال وتجلب البركة. إيتاء الزكاة للمستحقين من أركان الإسلام الأساسية.";
+                } else if (text.includes('قرآن') || text.includes('آية') || text.includes('سورة')) {
+                    return "\"أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ\" (سورة الرعد، 28) 📖 يمكنك قراءة السور من قسم القرآن في تطبيقنا.";
+                } else if (text.includes('قبلة') || text.includes('بوصلة')) {
+                    return "يمكنك العثور على اتجاه الكعبة المشرفة بسهولة باستخدام ميزة 'بوصلة القبلة' في القائمة.";
+                } else if (text.includes('أسماء') || text.includes('الحسنى')) {
+                    return "أسماء الله الحسنى هي 99 اسماً مباركاً. يمكنك الاطلاع عليها في صفحة أسماء الله الحسنى من القائمة الرئيسية.";
+                } else {
+                    return "سؤال رائع ومهم جداً يا أخي! لقد دونت هذا. كيف يمكنني مساعدتك أكثر؟";
+                }
+            }
+        }
+
+        // --- 6. SAYFA BAŞLATMA ---
+        updateThemeIcon();
+        initUI();
     </script>
 </body>
 </html>
