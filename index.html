@@ -3,37 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a" id="themeColorMeta">
     <title>Ayetin Vakti - Yapay Zeka Asistanı</title>
-    
+
     <!-- Titremesiz Tema, Renk Hafızası ve Dil Entegrasyonu -->
     <script>
-        // 1. Dil Ayarını Yükle (user_lang ile senkronize)
+        // 1. Dil
         const savedLang = localStorage.getItem('user_lang') || 'tr';
         document.documentElement.lang = savedLang;
-        if (savedLang === 'ar') {
-            document.documentElement.dir = 'rtl';
-        }
+        if (savedLang === 'ar') document.documentElement.dir = 'rtl';
 
-        // 2. Tema Ayarını Yükle
+        // 2. Tema (ilk açılışta sistem teması)
         const savedTheme = localStorage.getItem('theme');
         const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (savedTheme === 'light' || (!savedTheme && !systemPrefersDark)) {
             document.documentElement.classList.add('light-mode');
         }
 
-        // 3. Özel Renk Paletini Yükle
-        const customBg = localStorage.getItem('custom_bg');
-        const customCard = localStorage.getItem('custom_card');
-        const customText = localStorage.getItem('custom_text');
-        const customAccent = localStorage.getItem('custom_accent');
-
-        if (customBg) document.documentElement.style.setProperty('--bg-color', customBg);
-        if (customCard) document.documentElement.style.setProperty('--chat-bg', customCard);
-        if (customText) document.documentElement.style.setProperty('--text-color', customText);
-        if (customAccent) {
-            document.documentElement.style.setProperty('--primary-color', customAccent);
-            document.documentElement.style.setProperty('--user-msg-bg', customAccent);
+        // 3. Özel renk paleti (yalnızca kaydedilen renkler uygulanır)
+        function hexLum(hex) {
+            hex = String(hex || '').trim().replace('#', '');
+            if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+            if (!/^[0-9a-fA-F]{6}$/.test(hex)) return null;
+            const ch = [0, 2, 4].map(i => {
+                const v = parseInt(hex.substr(i, 2), 16) / 255;
+                return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+            });
+            return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
         }
+        (function () {
+            const root = document.documentElement.style;
+            const bg = localStorage.getItem('custom_bg');
+            const card = localStorage.getItem('custom_card');
+            const text = localStorage.getItem('custom_text');
+            const accent = localStorage.getItem('custom_accent');
+            if (bg) root.setProperty('--bg-color', bg);
+            if (card) root.setProperty('--chat-bg', card);
+            if (text) root.setProperty('--text-color', text);
+            // Özel arka plan var, yazı rengi seçilmemişse: okunabilir yazı rengi otomatik
+            if (bg && !text) {
+                const l = hexLum(bg);
+                if (l !== null) root.setProperty('--text-color', l > 0.45 ? '#1e293b' : '#f8fafc');
+            }
+            if (accent) {
+                root.setProperty('--primary-color', accent);
+                root.setProperty('--user-msg-bg', accent);
+                const l = hexLum(accent);
+                if (l !== null) root.setProperty('--user-text-color', l > 0.45 ? '#0f172a' : '#ffffff');
+            }
+        })();
     </script>
 
     <style>
@@ -48,7 +66,6 @@
             --border-color: #334155;
             --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
-
         html.light-mode {
             --bg-color: #f8fafc;
             --chat-bg: #ffffff;
@@ -59,426 +76,644 @@
             --user-text-color: #ffffff;
             --border-color: #e2e8f0;
         }
+        html[lang="ar"] { --font-family: 'Amiri', 'Traditional Arabic', serif; }
 
-        /* RTL (Arapça) Font Uyumluluğu */
-        html[lang="ar"] {
-            --font-family: 'Amiri', 'Traditional Arabic', serif;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: var(--font-family);
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-family); touch-action: manipulation; }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            height: 100dvh;
-            overflow: hidden;
-            transition: background-color 0.3s ease, color 0.3s ease;
+            display: flex; flex-direction: column;
+            height: 100vh; height: 100dvh; overflow: hidden;
+            transition: background-color .3s ease, color .3s ease;
         }
-
         header {
-            padding: 12px 16px;
-            background-color: var(--chat-bg);
+            padding: 12px 16px; background-color: var(--chat-bg);
             border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
+            display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
         }
-
-        header h1 {
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .nav-controls {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
+        header h1 { font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+        .nav-controls { display: flex; align-items: center; gap: 4px; }
         .nav-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 1.3rem;
-            color: var(--text-color);
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            transition: background-color 0.2s ease;
+            background: none; border: none; cursor: pointer; font-size: 1.25rem;
+            color: var(--text-color); text-decoration: none;
+            display: flex; align-items: center; justify-content: center;
+            width: 36px; height: 36px; border-radius: 50%; transition: background-color .2s ease;
         }
-
-        .nav-btn:active {
-            background-color: var(--bot-msg-bg);
-        }
-
-        /* RTL İçin Geri Butonu Yönü */
-        html[dir="rtl"] #back-btn {
-            transform: scaleX(-1);
-        }
+        .nav-btn:active { background-color: var(--bot-msg-bg); }
+        html[dir="rtl"] #back-btn { transform: scaleX(-1); }
 
         .chat-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            -webkit-overflow-scrolling: touch;
+            flex: 1; overflow-y: auto; padding: 16px;
+            display: flex; flex-direction: column; gap: 12px; -webkit-overflow-scrolling: touch;
         }
-
         .message {
-            max-width: 85%;
-            padding: 10px 14px;
-            border-radius: 12px;
-            line-height: 1.4;
-            font-size: 0.9rem;
-            word-wrap: break-word;
+            max-width: 88%; padding: 10px 14px; border-radius: 12px;
+            line-height: 1.5; font-size: .9rem; word-wrap: break-word; overflow-wrap: anywhere;
         }
+        .message.bot { background-color: var(--bot-msg-bg); align-self: flex-start; border-bottom-left-radius: 2px; }
+        .message.user { background-color: var(--user-msg-bg); color: var(--user-text-color); align-self: flex-end; border-bottom-right-radius: 2px; }
+        html[dir="rtl"] .message.bot { border-bottom-left-radius: 12px; border-bottom-right-radius: 2px; }
+        html[dir="rtl"] .message.user { border-bottom-right-radius: 12px; border-bottom-left-radius: 2px; }
 
-        .message.bot {
-            background-color: var(--bot-msg-bg);
-            align-self: flex-start;
-            border-bottom-left-radius: 2px;
+        /* Zengin cevap blokları */
+        .b-h { font-weight: 700; margin-bottom: 6px; font-size: .95rem; }
+        .message p, .message .b-p { margin: 6px 0; }
+        .message ul, .message ol { margin: 6px 0; padding-inline-start: 20px; }
+        .message li { margin: 3px 0; }
+        .b-note { margin-top: 8px; font-size: .8rem; opacity: .85; border-inline-start: 3px solid var(--primary-color); padding-inline-start: 8px; }
+        .b-src { margin-top: 8px; font-size: .75rem; opacity: .75; }
+        .tbl-wrap { overflow-x: auto; margin: 8px 0; }
+        .message table { border-collapse: collapse; font-size: .8rem; min-width: 100%; }
+        .message th, .message td { border: 1px solid var(--border-color); padding: 5px 8px; text-align: center; white-space: nowrap; }
+        .message th { background: var(--chat-bg); }
+        .ayah-card {
+            margin: 8px 0; padding: 10px 12px; border-radius: 10px;
+            background: var(--chat-bg); border: 1px solid var(--border-color);
+            border-inline-start: 4px solid var(--primary-color);
         }
-
-        .message.user {
-            background-color: var(--user-msg-bg);
-            color: var(--user-text-color);
-            align-self: flex-end;
-            border-bottom-right-radius: 2px;
+        .ayah-ar { direction: rtl; text-align: right; font-family: 'Amiri', 'Traditional Arabic', 'Scheherazade New', serif; font-size: 1.35rem; line-height: 2; }
+        .ayah-tr { margin-top: 6px; font-size: .88rem; }
+        .ayah-ref { margin-top: 6px; font-size: .75rem; opacity: .75; }
+        .links-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .link-btn {
+            display: inline-block; padding: 6px 12px; border-radius: 14px; font-size: .8rem; text-decoration: none;
+            background: var(--primary-color); color: var(--user-text-color); font-weight: 600;
         }
-
-        /* RTL Mesaj Hizalama Ayarları */
-        html[dir="rtl"] .message.bot {
-            border-bottom-left-radius: 12px;
-            border-bottom-right-radius: 2px;
+        .chips-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .mini-chip {
+            background: var(--chat-bg); color: var(--text-color); border: 1px solid var(--border-color);
+            padding: 5px 11px; border-radius: 14px; font-size: .78rem; cursor: pointer;
         }
-
-        html[dir="rtl"] .message.user {
-            border-bottom-right-radius: 12px;
-            border-bottom-left-radius: 2px;
-        }
+        .mini-chip:active { opacity: .7; }
+        .copy-btn { background: none; border: none; cursor: pointer; font-size: .75rem; color: var(--text-color); opacity: .6; margin-top: 6px; padding: 2px 0; }
+        .typing { display: inline-flex; gap: 4px; padding: 4px 0; }
+        .typing span { width: 7px; height: 7px; border-radius: 50%; background: var(--text-color); opacity: .4; animation: blink 1.2s infinite; }
+        .typing span:nth-child(2) { animation-delay: .2s; }
+        .typing span:nth-child(3) { animation-delay: .4s; }
+        @keyframes blink { 0%, 80%, 100% { opacity: .2; } 40% { opacity: .9; } }
 
         .suggestions-container {
-            display: flex;
-            gap: 8px;
-            padding: 10px 16px;
-            overflow-x: auto;
-            background-color: var(--chat-bg);
-            border-top: 1px solid var(--border-color);
-            flex-shrink: 0;
-            white-space: nowrap;
-            scrollbar-width: none;
+            display: flex; gap: 8px; padding: 10px 16px; overflow-x: auto;
+            background-color: var(--chat-bg); border-top: 1px solid var(--border-color);
+            flex-shrink: 0; white-space: nowrap; scrollbar-width: none;
         }
-
-        .suggestions-container::-webkit-scrollbar {
-            display: none;
-        }
-
+        .suggestions-container::-webkit-scrollbar { display: none; }
         .suggestion-chip {
-            background-color: var(--bot-msg-bg);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            padding: 6px 14px;
-            border-radius: 16px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            flex-shrink: 0;
+            background-color: var(--bot-msg-bg); color: var(--text-color); border: 1px solid var(--border-color);
+            padding: 6px 14px; border-radius: 16px; font-size: .8rem; cursor: pointer; transition: all .2s ease; flex-shrink: 0;
         }
-
-        .suggestion-chip:active {
-            opacity: 0.7;
-            transform: scale(0.95);
-        }
+        .suggestion-chip:active { opacity: .7; transform: scale(.95); }
 
         .input-container {
-            padding: 12px 16px;
-            background-color: var(--chat-bg);
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            gap: 8px;
-            flex-shrink: 0;
-            position: relative;
-            z-index: 10;
+            padding: 12px 16px; background-color: var(--chat-bg); border-top: 1px solid var(--border-color);
+            display: flex; gap: 8px; flex-shrink: 0; position: relative; z-index: 10;
         }
-
         .input-container input {
-            flex: 1;
-            padding: 10px 14px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-size: 0.95rem;
-            outline: none;
-            -webkit-appearance: none;
+            flex: 1; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color);
+            background-color: var(--bg-color); color: var(--text-color); font-size: 16px; outline: none; -webkit-appearance: none;
         }
-
         .input-container button {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 0 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.9rem;
+            background-color: var(--primary-color); color: var(--user-text-color);
+            border: none; padding: 0 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: .9rem;
         }
+        .input-container button:disabled { opacity: .5; }
     </style>
 </head>
 <body>
 
     <header>
-        <div style="display: flex; align-items: center; gap: 6px;">
+        <div style="display:flex;align-items:center;gap:6px;">
             <a href="https://ayetinvakti.github.io/" class="nav-btn" id="back-btn" aria-label="Ana Sayfaya Dön" title="Geri">←</a>
             <h1 id="header-title">🤖 Vakit Asistanı</h1>
         </div>
         <div class="nav-controls">
+            <button class="nav-btn" onclick="newChat()" id="newChatBtn" title="Yeni sohbet" aria-label="Yeni sohbet">🗑️</button>
             <button class="nav-btn" onclick="toggleTheme()" id="themeIcon">☀️</button>
         </div>
     </header>
 
-    <div class="chat-container" id="chatContainer">
-        <!-- Karşılama mesajı JS tarafından dile göre yüklenecek -->
-    </div>
-
-    <!-- Hazır Soru Seçenekleri Çubuğu -->
-    <div class="suggestions-container" id="suggestionsContainer">
-        <!-- Çipler JS tarafından dile göre yüklenecek -->
-    </div>
+    <div class="chat-container" id="chatContainer"></div>
+    <div class="suggestions-container" id="suggestionsContainer"></div>
 
     <div class="input-container">
-        <input type="text" id="userInput" placeholder="..." autocomplete="off" onkeypress="handleKeyPress(event)">
+        <input type="text" id="userInput" placeholder="..." autocomplete="off" enterkeyhint="send">
         <button id="send-btn" onclick="sendMessage()">Gönder</button>
     </div>
 
     <script>
-        // --- 1. ÇOKLU DİL VE SÖZLÜK TANIMLARI ---
-        const uiTranslations = {
-            tr: {
-                docTitle: "Ayetin Vakti - Yapay Zeka Asistanı",
-                headerTitle: "🤖 Vakit Asistanı",
-                inputPlaceholder: "Dini bir soru sorun ya da sohbet edin...",
-                sendBtn: "Gönder",
-                welcomeMsg: "Selamün Aleyküm kardeşim! Ben Vakit Asistanı. Sana namaz vakitleri, oruç, abdest, sureler, dualar, zekat ve dini konulardaki tüm sorularında rehberlik etmeye hazırım. Aşağıdaki hazır seçenekleri kullanabilir veya dilediğini sorabilirsin!",
-                suggestions: [
-                    { label: "⏰ Namaz Vakitleri", query: "Namaz vakitleri nasıl hesaplanıyor?" },
-                    { label: "💧 Abdest Nasıl Alınır?", query: "Abdest nasıl alınır?" },
-                    { label: "📖 Günün Ayeti", query: "Günün ayeti nedir?" },
-                    { label: "🤲 Zekat ve Sadaka", query: "Zekat kimlere verilir?" },
-                    { label: "🧭 Kıble Pusulası", query: "Kıbleyi nasıl bulabilirim?" },
-                    { label: "✨ Esmaül Hüsna", query: "Esmaül Hüsna nedir?" }
-                ]
-            },
-            en: {
-                docTitle: "Time of Ayah - AI Assistant",
-                headerTitle: "🤖 Time Assistant",
-                inputPlaceholder: "Ask a religious question or chat...",
-                sendBtn: "Send",
-                welcomeMsg: "Assalamu Alaikum my brother/sister! I am Time Assistant. I am ready to guide you on prayer times, fasting, ablution, surahs, prayers, zakat, and all religious topics. You can use the quick options below or ask anything you like!",
-                suggestions: [
-                    { label: "⏰ Prayer Times", query: "How are prayer times calculated?" },
-                    { label: "💧 How to Perform Wudu?", query: "How to perform wudu?" },
-                    { label: "📖 Verse of the Day", query: "What is the verse of the day?" },
-                    { label: "🤲 Zakat & Charity", query: "Who should receive zakat?" },
-                    { label: "🧭 Qibla Compass", query: "How can I find the Qibla?" },
-                    { label: "✨ Asma-ul Husna", query: "What is Asma-ul Husna?" }
-                ]
-            },
-            ar: {
-                docTitle: "وقت الآية - المساعد الذكي",
-                headerTitle: "🤖 مساعد الوقت",
-                inputPlaceholder: "إسأل سؤالاً دينياً أو تحدث معي...",
-                sendBtn: "إرسال",
-                welcomeMsg: "السلام عليكم ورحمة الله وبركاته يا أخي! أنا مساعد الوقت. أنا مستعد لإرشادك بشأن أوقات الصلاة، الصيام، الوضوء، السور، الأدعية، الزكاة وجميع المواضيع الدينية. يمكنك استخدام الخيارات السريعة أدناه أو سؤال أي شيء تريد!",
-                suggestions: [
-                    { label: "⏰ مواقيت الصلاة", query: "كيف يتم حساب مواقيت الصلاة؟" },
-                    { label: "💧 كيفية الوضوء؟", query: "كيف أتوضأ؟" },
-                    { label: "📖 آية اليوم", query: "ما هي آية اليوم؟" },
-                    { label: "🤲 الزكاة والصدقة", query: "من هم مستحقو الزكاة؟" },
-                    { label: "🧭 بوصلة القبلة", query: "كيف أجد اتجاه القبلة؟" },
-                    { label: "✨ أسماء الله الحسنى", query: "ما هي أسماء الله الحسنى؟" }
-                ]
-            }
-        };
+// =====================================================================
+//  AYET ASİSTAN — doğrulanmış kaynaklı cevap motoru
+//  İlke: Dini içerik yalnızca (1) aşağıdaki kaynağı belirtilmiş kısa bilgi
+//  bankasından, (2) canlı Kur'an servisinden (alquran.cloud) gelir.
+//  Hafızadan/üretilmiş dini bilgi YOKTUR. Bilinmeyen soruya cevap uydurulmaz.
+// =====================================================================
+const API = 'https://api.alquran.cloud/v1';
+const SITE = 'https://ayetinvakti.github.io/';
+const MEAL = { tr: 'tr.diyanet', en: 'en.sahih', ar: null };
+const MEAL_LABEL = { tr: 'Türkçe meal: Diyanet İşleri (alquran.cloud)', en: 'Translation: Sahih International (alquran.cloud)', ar: 'alquran.cloud' };
+const SEARCH_ED = { tr: 'tr.diyanet', en: 'en.sahih', ar: 'quran-simple' };
 
-        const currentLang = localStorage.getItem('user_lang') || 'tr';
-        const t = uiTranslations[currentLang] || uiTranslations.tr;
+// ---- Türkçe sure adları (1–114 sırasıyla) ----
+const SURAH_TR = ["Fâtiha","Bakara","Âl-i İmrân","Nisâ","Mâide","En'âm","A'râf","Enfâl","Tevbe","Yûnus","Hûd","Yûsuf","Ra'd","İbrâhîm","Hicr","Nahl","İsrâ","Kehf","Meryem","Tâhâ","Enbiyâ","Hac","Mü'minûn","Nûr","Furkân","Şuarâ","Neml","Kasas","Ankebût","Rûm","Lokmân","Secde","Ahzâb","Sebe'","Fâtır","Yâsîn","Sâffât","Sâd","Zümer","Mü'min|Gâfir","Fussilet","Şûrâ","Zuhruf","Duhân","Câsiye","Ahkâf","Muhammed","Fetih","Hucurât","Kâf","Zâriyât","Tûr","Necm","Kamer","Rahmân","Vâkıa","Hadîd","Mücâdele","Haşr","Mümtehine","Saff","Cum'a","Münâfikûn","Tegâbün","Talâk","Tahrîm","Mülk","Kalem","Hâkka","Meâric","Nûh","Cin","Müzzemmil","Müddessir","Kıyâme","İnsân","Mürselât","Nebe'","Nâziât","Abese","Tekvîr","İnfitâr","Mutaffifîn","İnşikâk","Bürûc","Târık","A'lâ","Gâşiye","Fecr","Beled","Şems","Leyl","Duhâ","İnşirâh","Tîn","Alak","Kadir","Beyyine","Zilzâl","Âdiyât","Kâria","Tekâsür","Asr","Hümeze","Fîl","Kureyş","Mâûn","Kevser","Kâfirûn","Nasr","Tebbet","İhlâs","Felak","Nâs"];
 
-        // --- 2. ARAYÜZÜ DİLE GÖRE DOLDURMA ---
-        function initUI() {
-            document.title = t.docTitle;
-            document.getElementById('header-title').textContent = t.headerTitle;
-            document.getElementById('userInput').placeholder = t.inputPlaceholder;
-            document.getElementById('send-btn').textContent = t.sendBtn;
+// ---- Sitedeki sayfalar (repo adları) ----
+const PAGES = {
+  namaz:   { repo: 'Namaz-vakitleri', l: { tr: 'Namaz Vakitleri', en: 'Prayer Times', ar: 'مواقيت الصلاة' }, d: { tr: 'Bulunduğun konuma göre vakitleri ve vakit bildirimlerini oradan takip edebilirsin.', en: 'Follow the prayer times for your location, and prayer-time notifications, there.', ar: 'تابع مواقيت الصلاة حسب موقعك والتنبيهات هناك.' } },
+  kaza:    { repo: 'kaza-namazi', l: { tr: 'Kaza Namazı', en: 'Qaḍā Prayer Tracker', ar: 'قضاء الصلوات' }, d: { tr: 'Kaza namazı borcunu takip etmek için bu sayfayı kullanabilirsin.', en: 'Use this page to keep track of your missed prayers.', ar: 'استخدم هذه الصفحة لمتابعة الصلوات الفائتة.' } },
+  imsakiye:{ repo: 'Ramazan-ozel-imsakiye', l: { tr: 'Ramazan İmsakiyesi', en: 'Ramadan Imsakiyah', ar: 'إمساكية رمضان' }, d: { tr: 'Ramazan imsakiyesi bu sayfada.', en: 'The Ramadan timetable is on this page.', ar: 'إمساكية رمضان في هذه الصفحة.' } },
+  kible:   { repo: 'kible-pusulasi', l: { tr: 'Kıble Pusulası', en: 'Qibla Compass', ar: 'بوصلة القبلة' }, d: { tr: 'Kıble yönü için bu sayfayı kullan; konum izni vermen gerekir.', en: 'Use this page for the Qibla direction; it needs location permission.', ar: 'استخدم هذه الصفحة لمعرفة اتجاه القبلة؛ تحتاج إلى إذن الموقع.' } },
+  camiler: { repo: 'Yakindaki-Camiler', l: { tr: 'Yakındaki Camiler', en: 'Nearby Mosques', ar: 'المساجد القريبة' }, d: { tr: 'Yakınındaki camileri mesafeye göre bu sayfada bulabilirsin.', en: 'Find nearby mosques by distance on this page.', ar: 'اعثر على المساجد القريبة حسب المسافة في هذه الصفحة.' } },
+  zekat:   { repo: 'zekat-hesaplama', l: { tr: 'Zekât Hesaplama', en: 'Zakat Calculator', ar: 'حاسبة الزكاة' }, d: { tr: 'Nisap ve zekât miktarı için Zekât Hesaplama sayfasını kullan.', en: 'Use the Zakat Calculator page for the nisab and the zakat amount.', ar: 'استخدم حاسبة الزكاة للنصاب ومقدار الزكاة.' } },
+  zikir:   { repo: 'Zikirmatik', l: { tr: 'Zikirmatik', en: 'Dhikr Counter', ar: 'المسبحة الإلكترونية' }, d: { tr: 'Zikirmatik üç modla çalışır: klasik, gerçekçi tesbih ve parmakla sayma.', en: 'The counter has three modes: classic, realistic tasbih and finger counting.', ar: 'للمسبحة ثلاثة أوضاع: كلاسيكي وسبحة واقعية والعد بالأصابع.' } },
+  gunun:   { repo: 'gunun-ayeti', l: { tr: 'Günün Ayeti', en: 'Verse of the Day', ar: 'آية اليوم' }, d: { tr: 'Günün ayeti, duası ve hadisi bu sayfada.', en: 'The daily verse, prayer and hadith are on this page.', ar: 'آية اليوم ودعاؤه وحديثه في هذه الصفحة.' } },
+  kuran:   { repo: 'kuran-oku', l: { tr: "Kur'an Oku", en: 'Read Quran', ar: 'قراءة القرآن' }, d: { tr: "Sureleri okumak ve aramak için Kur'an Oku sayfası.", en: 'Read and search surahs on the Read Quran page.', ar: 'اقرأ السور وابحث فيها في صفحة قراءة القرآن.' } },
+  dualar:  { repo: 'gunluk-dualar', l: { tr: 'Günlük Dualar', en: 'Daily Prayers', ar: 'الأدعية اليومية' }, d: { tr: 'Dualar için Günlük Dualar sayfasına bak.', en: 'See the Daily Prayers page for supplications.', ar: 'راجع صفحة الأدعية اليومية.' } },
+  hutbe:   { repo: 'Haftanin-Hutbesi', l: { tr: 'Haftanın Hutbesi', en: "Weekly Khutbah", ar: 'خطبة الأسبوع' }, d: { tr: 'Haftanın hutbesini okuyabilir, dinleyebilir ve paylaşabilirsin.', en: 'You can read, listen to and share the weekly khutbah.', ar: 'يمكنك قراءة خطبة الأسبوع والاستماع إليها ومشاركتها.' } },
+  siyer:   { repo: 'Siyer-i-Nebi', l: { tr: 'Siyer-i Nebi', en: 'Prophetic Biography (Sīrah)', ar: 'السيرة النبوية' }, d: { tr: 'Peygamberimizin hayatı için Siyer-i Nebi sayfasına bak.', en: "See the Sīrah page for the Prophet's life.", ar: 'راجع صفحة السيرة النبوية.' } },
+  ilmihal: { repo: 'Ilmihal', l: { tr: 'İlmihal Kütüphanesi', en: 'Ilmihal Library', ar: 'مكتبة العلم والحال' }, d: { tr: 'İbadet bilgileri (Hanefî esaslı özet) İlmihal Kütüphanesi sayfasında.', en: 'Worship topics (Hanafi-based summaries) are on the Ilmihal Library page.', ar: 'مسائل العبادات (ملخصات على المذهب الحنفي) في مكتبة العلم والحال.' } },
+  gunler:  { repo: 'dini-gunler', l: { tr: 'Dini Günler', en: 'Religious Days', ar: 'الأيام الدينية' }, d: { tr: 'Kandil, bayram gibi dini günler bu sayfada.', en: 'Religious days such as holy nights and Eids are on this page.', ar: 'الأيام الدينية كالأعياد والليالي المباركة في هذه الصفحة.' } },
+  tabu:    { repo: 'Islami-Tabu', l: { tr: 'Dini Tabu', en: 'Islamic Taboo', ar: 'لعبة تابو الإسلامية' }, d: { tr: 'Dini Tabu oyunu bu sayfada.', en: 'The Islamic Taboo game is on this page.', ar: 'لعبة تابو الإسلامية في هذه الصفحة.' } },
+  ogretmen:{ repo: 'namaz-ogretmeni', l: { tr: 'Namaz Öğretmeni', en: 'Prayer Teacher', ar: 'معلّم الصلاة' }, d: { tr: 'Namazı öğrenmek için Namaz Öğretmeni sayfasına bak.', en: 'See the Prayer Teacher page to learn how to pray.', ar: 'راجع صفحة معلّم الصلاة لتعلّم الصلاة.' } },
+  kabe:    { repo: '5-5-namaz', l: { tr: '5-5 Namaz (Manevi Kâbe)', en: '5-5 Prayer (Spiritual Kaaba)', ar: '5-5 صلاة (الكعبة المعنوية)' }, d: { tr: 'Manevi Kâbe İnşası sayfası: namazlarını işaretleyerek 3B Kâbe’yi inşa edersin.', en: 'The Spiritual Kaaba page: build the 3D Kaaba by tracking your prayers.', ar: 'صفحة الكعبة المعنوية: ابنِ الكعبة ثلاثية الأبعاد بمتابعة صلواتك.' } },
+  ayarlar: { repo: 'ayarlar', l: { tr: 'Ayarlar', en: 'Settings', ar: 'الإعدادات' }, d: { tr: 'Dil (Türkçe, İngilizce, Arapça), açık/koyu tema ve özel renk paleti Ayarlar sayfasından seçilir.', en: 'Language (Turkish, English, Arabic), light/dark theme and custom colors are set on the Settings page.', ar: 'تُختار اللغة (التركية والإنجليزية والعربية) والمظهر الفاتح/الداكن والألوان المخصصة من صفحة الإعدادات.' } },
+  anasayfa:{ repo: '', l: { tr: 'Ana Sayfa', en: 'Home', ar: 'الرئيسية' }, d: { tr: 'Esmaül Hüsna dahil diğer bölümlere ana menüden ulaşabilirsin.', en: 'Other sections, including Asma-ul Husna, are reachable from the main menu.', ar: 'يمكنك الوصول إلى بقية الأقسام، ومنها أسماء الله الحسنى، من القائمة الرئيسية.' } }
+};
 
-            // İlk Hoş Geldiniz Mesajını Ekle
-            appendMessage(t.welcomeMsg, 'bot');
+// sayfa yönlendirme desenleri (normalize metinde aranır)
+const PAGE_RULES = [
+  ['kabe', /\b5 ?[- ]?5\b|manevi kabe|kabe insa|building the kaaba|spiritual kaaba|الكعبه المعنويه/],
+  ['kaza', /\bkaza\b|missed prayer|qada|قضاء/],
+  ['imsakiye', /imsakiye|ramazan.*(vakit|takvim)|ramadan.*(time|timetable|schedule)|امساكيه/],
+  ['kible', /kible|pusula|qibla|kibla|compass|قبله|بوصله/],
+  ['camiler', /yakin.*cami|cami.*(yakin|nerede|bul)|nearby mosque|mosque near|المساجد القريبه|مسجد قريب/],
+  ['zekat', /zekat|zakat|sadaka|zakah|الزكاه|زكاه|صدقه/],
+  ['zikir', /zikir|tesbih|tasbih|dhikr|zikr|مسبحه|ذكر|تسبيح/],
+  ['namaz', /vakit|ezan|imsak|ikindi|yatsi|prayer time|adhan|azan|fajr|dhuhr|maghrib|isha|مواقيت|اذان|وقت/],
+  ['ogretmen', /namaz.*(ogren|nasil kil|kilinis|ogretmen)|how (do i|to) pray|learn.*(pray|salah|salat)|teach.*pray|كيف.*اصلي|تعلم.*صلاه/],
+  ['gunun', /gunun (ayet|dua|hadis)|verse of the day|hadith of the day|اية اليوم|آيه اليوم/],
+  ['kuran', /kuran.*(oku|sure)|read.*quran|قراءه القران/],
+  ['dualar', /\bdua\b|dualar|supplication|\bdua'?s?\b|دعاء|ادعيه/],
+  ['hutbe', /hutbe|khutbah|khutba|خطبه/],
+  ['siyer', /siyer|peygamber.*hayat|sirah|seerah|life of (the )?prophet|السيره/],
+  ['ilmihal', /ilmihal|ilm-?i hal/],
+  ['gunler', /kandil|bayram|dini gun|mubarek gece|eid|holy night|religious day|عيد|ليله القدر|المولد/],
+  ['tabu', /tabu|taboo/],
+  ['ayarlar', /ayar|tema|\bdil\b.*(degis|sec|ayar)|dili|renk|settings|theme|language|colou?r|الاعدادات|اللغه|المظهر/],
+  ['anasayfa', /esma|asma|hüsna|husna|99 isim|99 names|اسماء الله/]
+];
 
-            // Çipleri Doldur
-            const sugContainer = document.getElementById('suggestionsContainer');
-            sugContainer.innerHTML = '';
-            t.suggestions.forEach(item => {
-                const btn = document.createElement('button');
-                btn.className = 'suggestion-chip';
-                btn.textContent = item.label;
-                btn.onclick = () => sendSuggestion(item.query);
-                sugContainer.appendChild(btn);
-            });
-        }
+// ---- Doğrulanmış kısa bilgi bankası ----
+const S32 = '“32 Farz” özeti — Diyanet kaynaklı (islamveihsan.com/32-farz.html)';
+const SREK = 'islamveihsan.com/namaz-cesitleri-ve-rekatlari.html · Diyanet ilmihali esaslı';
+const MEZHEP = { tr: 'Bu bilgi Hanefî mezhebine göredir; diğer mezheplerde ayrıntılar farklı olabilir.', en: 'This follows the Hanafi school; details may differ in other schools.', ar: 'هذا على المذهب الحنفي؛ وقد تختلف التفاصيل في المذاهب الأخرى.' };
 
-        // --- 3. TEMA YÖNETİMİ ---
-        function updateThemeIcon() {
-            const isLight = document.documentElement.classList.contains('light-mode');
-            document.getElementById('themeIcon').textContent = isLight ? '☀️' : '🌙';
-        }
+const KB = {
+  farz32: { re: [/32 farz|otuz iki farz|32 fards?|32 obligations|الاثنان والثلاثون|32 فرض/],
+    tr: [['h','32 Farz'],['ul',['İmanın şartları: 6','İslam’ın şartları: 5','Namazın farzları: 12','Abdestin farzları: 4','Guslün farzları: 3','Teyemmümün farzları: 2']],['note',MEZHEP.tr],['src',S32]],
+    en: [['h','The 32 Fards'],['ul',['Pillars of faith: 6','Pillars of Islam: 5','Obligations of prayer: 12','Obligations of wudu: 4','Obligations of ghusl: 3','Obligations of tayammum: 2']],['note',MEZHEP.en],['src',S32]],
+    ar: [['h','الفرائض الاثنان والثلاثون'],['ul',['أركان الإيمان: 6','أركان الإسلام: 5','فرائض الصلاة: 12','فرائض الوضوء: 4','فرائض الغسل: 3','فرائض التيمم: 2']],['note',MEZHEP.ar],['src',S32]],
+    follow: ['iman','islam','namazfarz','abdest','gusul','teyemmum'] },
+  iman: { re: [/iman\w* sart|iman.*alti|amentu|pillars? of (faith|iman)|articles of faith|اركان الايمان|الايمان.*اركان/],
+    tr: [['h','İmanın Şartları (6)'],['ol',['Allah’ın birliğine inanmak','Meleklere inanmak','Kitaplara inanmak','Peygamberlere inanmak','Ahiret hayatına inanmak','Kaderin, hayrın ve şerrin Allah’tan geldiğine inanmak']],['src',S32]],
+    en: [['h','Pillars of Faith (6)'],['ol',['Belief in the oneness of Allah','Belief in the angels','Belief in the books','Belief in the prophets','Belief in the Hereafter','Belief that fate, its good and its evil, is from Allah']],['src',S32]],
+    ar: [['h','أركان الإيمان (6)'],['ol',['الإيمان بالله ووحدانيته','الإيمان بالملائكة','الإيمان بالكتب','الإيمان بالرسل','الإيمان باليوم الآخر','الإيمان بالقدر خيره وشره من الله']],['src',S32]],
+    follow: ['islam','farz32'] },
+  islam: { re: [/islam\w* sart|islam.*bes sart|5 sart|pillars? of islam|اركان الاسلام|الاسلام.*اركان/],
+    tr: [['h','İslam’ın Şartları (5)'],['ol',['Kelime-i şehadet getirmek','Namaz kılmak','Oruç tutmak','Zekât vermek','Hacca gitmek']],['src',S32]],
+    en: [['h','Pillars of Islam (5)'],['ol',['Declaring the shahada','Performing prayer','Fasting','Giving zakat','Going on pilgrimage (hajj)']],['src',S32]],
+    ar: [['h','أركان الإسلام (5)'],['ol',['الشهادتان','إقامة الصلاة','الصوم','إيتاء الزكاة','الحج']],['src',S32]],
+    follow: ['iman','farz32'] },
+  abdest: { re: [/abdest|wudu|wudhu|ablution|وضو|توضا/],
+    tr: [['h','Abdestin Farzları (4)'],['ol',['Yüzünü yıkamak','Ellerini dirsekleriyle beraber yıkamak','Başının dörtte birini meshetmek','Ayaklarını topuklarıyla beraber yıkamak']],['note','Sünnetleri, adabı ve abdesti bozan durumlar için İlmihal sayfasına veya Diyanet’e başvur; burada yalnızca doğrulanmış farzları veriyorum.'],['note',MEZHEP.tr],['src',S32]],
+    en: [['h','Obligations of Wudu (4)'],['ol',['Wash the face','Wash the arms including the elbows','Wipe a quarter of the head','Wash the feet including the ankles']],['note','For the sunnahs, etiquette and what breaks wudu, see the Ilmihal page or Diyanet; here I only give the verified obligations.'],['note',MEZHEP.en],['src',S32]],
+    ar: [['h','فرائض الوضوء (4)'],['ol',['غسل الوجه','غسل اليدين مع المرفقين','مسح ربع الرأس','غسل الرجلين مع الكعبين']],['note','لسنن الوضوء وآدابه ونواقضه راجع صفحة العلم والحال أو الديانة؛ أذكر هنا الفرائض الموثقة فقط.'],['note',MEZHEP.ar],['src',S32]],
+    ayahs: ['5:6'], pages: ['ilmihal','ogretmen'], follow: ['gusul','namazfarz'] },
+  gusul: { re: [/gusul|boy abdest|ghusl|غسل|جنابه/],
+    tr: [['h','Guslün Farzları (3)'],['ol',['Ağzına su vermek','Burnuna su vermek','Bütün bedenini yıkamak']],['note','Hangi hâllerde gusül gerektiği ve ayrıntılar için İlmihal sayfasına veya Diyanet’e başvur.'],['note',MEZHEP.tr],['src',S32]],
+    en: [['h','Obligations of Ghusl (3)'],['ol',['Rinse the mouth','Rinse the nose','Wash the entire body']],['note','For when ghusl is required and further details, see the Ilmihal page or Diyanet.'],['note',MEZHEP.en],['src',S32]],
+    ar: [['h','فرائض الغسل (3)'],['ol',['المضمضة','الاستنشاق','غسل جميع البدن']],['note','لمعرفة موجبات الغسل وتفاصيله راجع صفحة العلم والحال أو الديانة.'],['note',MEZHEP.ar],['src',S32]],
+    pages: ['ilmihal'], follow: ['abdest','teyemmum'] },
+  teyemmum: { re: [/teyemmum|tayammum|تيمم/],
+    tr: [['h','Teyemmümün Farzları (2)'],['ol',['Niyet etmek','İki elin içini temiz toprağa sürüp yüzün tamamını mesh etmek; tekrar elleri temiz toprağa vurup önce sağ, sonra sol kolu mesh etmek']],['note','Hangi durumda teyemmüm yapılacağı için İlmihal sayfasına veya Diyanet’e başvur.'],['note',MEZHEP.tr],['src',S32]],
+    en: [['h','Obligations of Tayammum (2)'],['ol',['Make the intention','Strike the palms on clean earth and wipe the whole face; strike again and wipe the right arm, then the left']],['note','For when tayammum applies, see the Ilmihal page or Diyanet.'],['note',MEZHEP.en],['src',S32]],
+    ar: [['h','فرائض التيمم (2)'],['ol',['النية','ضرب الكفين على تراب طاهر ومسح الوجه كله؛ ثم ضربهما ثانية ومسح الذراع اليمنى ثم اليسرى']],['note','لمعرفة حالات التيمم راجع صفحة العلم والحال أو الديانة.'],['note',MEZHEP.ar],['src',S32]],
+    pages: ['ilmihal'], follow: ['abdest','gusul'] },
+  namazfarz: { re: [/namaz\w* (farz|sart)|farz\w* namaz|(prayer|salah|salat)\W+(\w+\W+){0,3}(fard|fards|obligation|pillar|condition)|(obligations?|pillars?|conditions?) of (the )?(prayer|salah|salat)|فرائض الصلاه|شروط الصلاه|اركان الصلاه|الصلاه.*(فرائض|اركان|شروط)/],
+    tr: [['h','Namazın Farzları (12)'],['p','**Namazın dışındaki farzlar (şartlar) — 6**'],['ol',['Hadesten tahâret','Necâsetten tahâret','Setr-i avret','İstikbâl-i kıble','Vakit','Niyet']],['p','**Namazın içindeki farzlar (rükünler) — 6**'],['ol',['İftitah tekbiri','Kıyam','Kıraat','Rükû','Secde','Ka’de-i ahîre']],['note',MEZHEP.tr],['src',S32]],
+    en: [['h','Obligations of Prayer (12)'],['p','**Conditions outside the prayer — 6**'],['ol',['Ritual purity from minor/major impurity (hadath)','Cleanliness from physical impurity (najasa)','Covering the awrah','Facing the Qibla','The prayer time','Intention (niyyah)']],['p','**Obligations inside the prayer — 6**'],['ol',['Opening takbir','Standing (qiyam)','Recitation (qira’ah)','Bowing (ruku’)','Prostration (sajdah)','Final sitting (qa’da akhira)']],['note',MEZHEP.en],['src',S32]],
+    ar: [['h','فرائض الصلاة (12)'],['p','**ما كان خارج الصلاة (الشروط) — 6**'],['ol',['الطهارة من الحدث','الطهارة من الخبث','ستر العورة','استقبال القبلة','الوقت','النية']],['p','**ما كان داخل الصلاة (الأركان) — 6**'],['ol',['تكبيرة الافتتاح','القيام','القراءة','الركوع','السجود','القعدة الأخيرة']],['note',MEZHEP.ar],['src',S32]],
+    pages: ['ogretmen'], follow: ['rekat','abdest'] },
+  vitir: { re: [/vitir|witr|وتر/],
+    tr: [['h','Vitir Namazı'],['p','Hanefî mezhebine göre vitir namazı vâciptir; yatsı namazından sonra 3 rekât olarak kılınır.'],['src',SREK]],
+    en: [['h','Witr Prayer'],['p','In the Hanafi school the witr prayer is wājib; it is prayed as 3 rak‘ahs after the ʿishāʾ prayer.'],['src',SREK]],
+    ar: [['h','صلاة الوتر'],['p','الوتر واجب عند الحنفية، وهو ثلاث ركعات بعد صلاة العشاء.'],['src',SREK]],
+    follow: ['rekat'] },
+  cuma: { re: [/cuma namaz|cuma kac|friday prayer|jumu'?a|jumuah|صلاه الجمعه/],
+    tr: [['h','Cuma Namazı'],['p','Cuma namazı 4 rekât ilk sünnet, 2 rekât farz ve 4 rekât son sünnet olmak üzere 10 rekâttır; öğle vaktinde cemaatle kılınır.'],['note','Cuma namazının farzı iki rekâttır.'],['src','Diyanet ilmihali esaslı (milliyet.com.tr/galeri/cuma-namazi-nasil-kilinir…)']],
+    en: [['h','Friday (Jumu‘ah) Prayer'],['p','The Friday prayer is 10 rak‘ahs: 4 first sunnah, 2 fard and 4 last sunnah; it is prayed in congregation at the noon time.'],['note','The fard of Jumu‘ah is two rak‘ahs.'],['src','Based on Diyanet ilmihal (milliyet.com.tr)']],
+    ar: [['h','صلاة الجمعة'],['p','صلاة الجمعة عشر ركعات: أربع سنة قبلية، وركعتان فرض، وأربع سنة بعدية؛ وتؤدى جماعة في وقت الظهر.'],['note','فرض الجمعة ركعتان.'],['src','على ما ورد في علم الحال لدى الديانة (milliyet.com.tr)']],
+    follow: ['rekat'] },
+  rekat: { re: [/rekat|rekât|rek at|rak'?ah|rakat|raka'?at|how many (units|rak)|ركعه|ركعات/],
+    follow: ['namazfarz','vitir','cuma'] }
+};
 
-        function toggleTheme() {
-            document.documentElement.classList.toggle('light-mode');
-            const isLight = document.documentElement.classList.contains('light-mode');
-            localStorage.setItem('theme', isLight ? 'light' : 'dark');
-            updateThemeIcon();
-        }
+// topic → ayet kartı (metin canlı servisten gelir)
+const TOPIC_AYAH = {
+  zekat: { re: [/zekat.*(kim|ver|hak)|kimlere.*zekat|who.*(receive|eligible).*zakat|zakat.*(recipient|who)|مصارف الزكاه|مستحق.*زكاه/], ref: '9:60', page: 'zekat',
+    tr: 'Zekâtın verileceği kimselerden Tevbe Sûresi 60. âyette söz edilir:', en: 'The recipients of zakat are mentioned in Surah At-Tawbah, verse 60:', ar: 'ذُكرت مصارف الزكاة في سورة التوبة، الآية 60:' },
+  oruc: { re: [/\boruc|sahur|iftar|fasting|\bsawm|ramadan fast|الصيام|صوم/], ref: '2:183', page: 'imsakiye',
+    tr: 'Oruçla ilgili temel âyetlerden biri Bakara Sûresi 183. âyettir:', en: 'One of the key verses on fasting is Surah Al-Baqarah, verse 183:', ar: 'من الآيات الأساسية في الصيام الآية 183 من سورة البقرة:' },
+  kible: { re: [/kibleyi|kible.*(nas|ne|bul)|qibla.*(find|how|direction)|اتجاه القبله|كيف.*القبله/], ref: '2:144', page: 'kible',
+    tr: 'Kıble, Bakara Sûresi 144. âyette Mescid-i Harâm’a yönelmek olarak geçer:', en: 'The Qibla is addressed in Surah Al-Baqarah, verse 144:', ar: 'ورد أمر استقبال القبلة في الآية 144 من سورة البقرة:' },
+  huzur: { re: [/huzur|kalp.*(rahat|huzur|sikinti)|sikinti|stres|heart.*(peace|rest|troubled)|peace of heart|anxious|الطمانينه|قلبي|طمانينه/], ref: '13:28', page: null,
+    tr: 'Kalplerin huzuru hakkında Ra‘d Sûresi 28. âyet şöyledir:', en: 'On the peace of hearts, Surah Ar-Ra‘d, verse 28:', ar: 'في طمأنينة القلوب، الآية 28 من سورة الرعد:' }
+};
 
-        // --- 4. SOHBET VE DİNAMİK CEVAP MOTORU ---
-        function appendMessage(text, sender) {
-            const container = document.getElementById('chatContainer');
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `message ${sender}`;
-            msgDiv.textContent = text;
-            container.appendChild(msgDiv);
-            container.scrollTop = container.scrollHeight;
-        }
+// ---- Arayüz metinleri ----
+const UI = {
+  tr: { docTitle: 'Ayetin Vakti - Yapay Zeka Asistanı', headerTitle: '🤖 Vakit Asistanı', ph: 'Dini bir soru sor, ayet ara…', send: 'Gönder', newChat: 'Yeni sohbet', copy: '📋 Kopyala', copied: '✓ Kopyalandı',
+    welcome: [['p','Selâmün aleyküm! Ben Vakit Asistanı. Şunlarda yardımcı olabilirim:'],['ul',['**Kur’an:** “Bakara 255”, “Yâsîn 1-5”, “Ayetel Kürsî” yaz ya da “sabır ile ilgili ayet” de; âyet metni ve Diyanet meali canlı olarak getirilir.','**Temel ibadet bilgileri:** 32 farz, abdest, gusül, namazın farzları, rekât sayıları.','**Site rehberi:** namaz vakitleri, kıble, zekât, dualar, hutbe ve diğer sayfalara yönlendirme.']],['note','Cevap vermeden önce kaynağı doğrulanamayan bilgiyi vermem; bilmediğim konuda tahmin yürütmem. Fetva yerine geçmez; fıkhî hükümler için Diyanet’e (Alo 190, il/ilçe müftülükleri) danış. Âyet aramalarında yazdığın kelime/âyet bilgisi alquran.cloud servisine gönderilir.']],
+    typing: '…', err: 'Kur’an servisine (alquran.cloud) ulaşılamadı. İnternet bağlantını kontrol edip tekrar dene; âyetleri Kur’an Oku sayfasından da okuyabilirsin.',
+    noAyah: 'Bu referansla bir âyet bulunamadı. Sure ve âyet numarasını kontrol et (ör. “Bakara 255” veya “2:255”).',
+    noSearch: 'Bu kelimeyle sonuç bulunamadı. Türkçe karakterlerle ve tek bir kelimeyle dene (ör. “sabır”, “namaz”).',
+    searched: (kw, n, shown) => `“${kw}” için ${n} sonuç bulundu; ilk ${shown} tanesi:`,
+    more: 'Kur’an Oku sayfasında daha fazlasını arayabilirsin.',
+    surahCut: (n, shown) => `Sure ${n} âyet; ilk ${shown} âyeti gösteriyorum. Tamamını Kur’an Oku sayfasından okuyabilirsin.`,
+    greet: 'Aleykümselâm ve rahmetullâh! Sana nasıl yardımcı olabilirim?', thanks: 'Allah razı olsun. Başka bir sorun olursa buradayım.',
+    help: [['h','Neler yapabilirim?'],['ul',['**Âyet getirme:** “Bakara 255”, “2:255”, “Yâsîn suresi 1-5”, “İhlâs suresi”, “Ayetel Kürsî”','**Âyet arama:** “sabır ile ilgili ayet”, “ara: merhamet”','**Temel bilgiler:** 32 farz, abdest, gusül, teyemmüm, namazın farzları, rekât sayıları, vitir, cuma','**Site rehberi:** hangi sayfada ne var, nasıl ulaşılır']],['note','Kaynağı doğrulanmamış dini bilgi vermem.']],
+    unknown: [['p','Bu konuda **doğrulanmış bir kaynağım yok**; yanlış bilgi vermemek için tahminde bulunmuyorum.'],['p','Fıkhî ve ayrıntılı dini sorular için yetkili kaynağa danışman en güvenlisidir: Diyanet İşleri Başkanlığı (Alo 190 Fetva Hattı, il/ilçe müftülükleri).']],
+    crisis: [['p','Yaşadığın şey çok ağır görünüyor; bunu yazdığın için sağ ol. Şu an güvende olmak çok önemli.'],['p','Kendine zarar verme düşüncen varsa lütfen hemen **112**’yi ara ya da yanındaki güvendiğin birine ulaş. Yalnız değilsin; buradan sonra da yazabilirsin.']],
+    seeSite: 'Sayfaya git', openDiyanet: 'Diyanet', ayahSrc: 'Âyet metni: alquran.cloud', ask: 'Sorabileceğin başka bir şey var mı?', searchChip: (kw) => `“${kw}” için ayet ara`,
+    chips: [['⏰ Namaz Vakitleri','Namaz vakitleri'],['💧 Abdest','Abdestin farzları nelerdir?'],['📖 Ayetel Kürsî','Ayetel Kürsî'],['🔎 Sabır ayetleri','Sabır ile ilgili ayet'],['🕌 Namazın Farzları','Namazın farzları'],['🔢 Rekât Sayıları','Rekât sayıları'],['🤲 Zekât','Zekât kimlere verilir?'],['🧭 Kıble','Kıbleyi nasıl bulabilirim?'],['🧩 32 Farz','32 farz nedir?'],['❓ Neler yapabilirsin?','Neler yapabilirsin?']] },
+  en: { docTitle: 'Time of Ayah - AI Assistant', headerTitle: '🤖 Time Assistant', ph: 'Ask a religious question or search a verse…', send: 'Send', newChat: 'New chat', copy: '📋 Copy', copied: '✓ Copied',
+    welcome: [['p','Assalamu alaikum! I am the Time Assistant. I can help with:'],['ul',['**Quran:** type “2:255”, “Ayat al-Kursi”, or “verses about patience”; the verse text and translation are fetched live.','**Core worship facts:** the 32 fards, wudu, ghusl, obligations of prayer, rak‘ah counts.','**Site guide:** prayer times, Qibla, zakat, supplications, khutbah and other pages.']],['note','I do not give religious information I cannot verify, and I do not guess. This is not a fatwa; for rulings ask Diyanet (Alo 190, local muftis). When you search verses, your search term/reference is sent to the alquran.cloud service. Detailed answers on some topics are available in Turkish first.']],
+    typing: '…', err: 'Could not reach the Quran service (alquran.cloud). Check your connection and try again; you can also read verses on the Read Quran page.',
+    noAyah: 'No verse found for that reference. Check the surah and verse number (e.g. “2:255”).',
+    noSearch: 'No results for that word. Try a single word (e.g. “patience”, “prayer”).',
+    searched: (kw, n, shown) => `${n} result(s) for “${kw}”; the first ${shown}:`,
+    more: 'You can search more on the Read Quran page.',
+    surahCut: (n, shown) => `This surah has ${n} verses; showing the first ${shown}. Read the rest on the Read Quran page.`,
+    greet: 'Wa alaikum assalam wa rahmatullah! How can I help you?', thanks: 'JazakAllahu khayran. I am here if you need anything else.',
+    help: [['h','What can I do?'],['ul',['**Show verses:** “2:255”, “Surah Yasin 1-5”, “Ayat al-Kursi”','**Search verses:** “verses about patience”, “search: mercy”','**Core facts:** 32 fards, wudu, ghusl, tayammum, obligations of prayer, rak‘ah counts, witr, Friday prayer','**Site guide:** what each page does and how to reach it']],['note','I do not give unverified religious information.']],
+    unknown: [['p','I **do not have a verified source** for this, so I will not guess.'],['p','For rulings and detailed questions the safest route is an authorized source: Diyanet (Alo 190 Fatwa Line in Turkey, local muftis), or a scholar you trust.']],
+    crisis: [['p','What you describe sounds very heavy, and I am glad you wrote it. Your safety matters most right now.'],['p','If you are thinking of harming yourself, please call your local emergency number now (**112** in Turkey) or reach someone you trust. You are not alone, and you can keep writing here too.']],
+    seeSite: 'Open page', openDiyanet: 'Diyanet', ayahSrc: 'Verse text: alquran.cloud', ask: 'Anything else?', searchChip: (kw) => `Search verses for “${kw}”`,
+    chips: [['⏰ Prayer Times','Prayer times'],['💧 Wudu','What are the obligations of wudu?'],['📖 Ayat al-Kursi','Ayat al-Kursi'],['🔎 Patience','Verses about patience'],['🕌 Prayer Obligations','Obligations of prayer'],['🔢 Rak‘ah Counts','Rak‘ah counts'],['🤲 Zakat','Who receives zakat?'],['🧭 Qibla','How can I find the Qibla?'],['🧩 32 Fards','What are the 32 fards?'],['❓ What can you do?','What can you do?']] },
+  ar: { docTitle: 'وقت الآية - المساعد الذكي', headerTitle: '🤖 مساعد الوقت', ph: 'اسأل سؤالاً دينياً أو ابحث عن آية…', send: 'إرسال', newChat: 'محادثة جديدة', copy: '📋 نسخ', copied: '✓ تم النسخ',
+    welcome: [['p','السلام عليكم ورحمة الله! أنا مساعد الوقت. يمكنني مساعدتك في:'],['ul',['**القرآن:** اكتب «2:255» أو «آية الكرسي» أو «آيات عن الصبر»؛ يُجلب نص الآية وترجمتها مباشرة.','**أساسيات العبادة:** الفرائض الاثنان والثلاثون، الوضوء، الغسل، فرائض الصلاة، عدد الركعات.','**دليل الموقع:** مواقيت الصلاة، القبلة، الزكاة، الأدعية، الخطبة وغيرها.']],['note','لا أقدّم معلومة دينية لا يمكن التحقق من مصدرها ولا أخمّن. هذا ليس فتوى؛ للأحكام راجع الديانة (Alo 190) أو دار الإفتاء المحلية. عند البحث عن الآيات يُرسل المرجع/الكلمة إلى خدمة alquran.cloud. بعض التفاصيل متاحة بالتركية أولاً.']],
+    typing: '…', err: 'تعذّر الوصول إلى خدمة القرآن (alquran.cloud). تحقق من الاتصال وحاول مجدداً، أو اقرأ الآيات من صفحة قراءة القرآن.',
+    noAyah: 'لم أجد آية بهذا المرجع. تحقق من رقم السورة والآية (مثل «2:255»).',
+    noSearch: 'لا نتائج لهذه الكلمة. جرّب كلمة واحدة (مثل «الصبر»).',
+    searched: (kw, n, shown) => `${n} نتيجة لـ «${kw}»؛ أول ${shown}:`,
+    more: 'يمكنك البحث أكثر في صفحة قراءة القرآن.',
+    surahCut: (n, shown) => `في السورة ${n} آية؛ أعرض أول ${shown}. اقرأ البقية في صفحة قراءة القرآن.`,
+    greet: 'وعليكم السلام ورحمة الله وبركاته! كيف أساعدك؟', thanks: 'جزاك الله خيراً. أنا هنا إن احتجت شيئاً آخر.',
+    help: [['h','ماذا أستطيع أن أفعل؟'],['ul',['**عرض الآيات:** «2:255»، «آية الكرسي»','**البحث في الآيات:** «آيات عن الصبر»','**أساسيات:** الفرائض الاثنان والثلاثون، الوضوء، الغسل، التيمم، فرائض الصلاة، عدد الركعات، الوتر، الجمعة','**دليل الموقع:** ما في كل صفحة وكيفية الوصول إليها']],['note','لا أقدّم معلومات دينية غير موثقة.']],
+    unknown: [['p','ليس لدي **مصدر موثّق** لهذا الأمر، ولذلك لن أخمّن.'],['p','للأحكام والأسئلة التفصيلية الأسلم أن ترجع إلى جهة مختصة: الديانة التركية (خط الفتوى Alo 190 ودور الإفتاء المحلية) أو عالم تثق به.']],
+    crisis: [['p','ما تصفه يبدو ثقيلاً جداً، وأشكرك على كتابته. سلامتك هي الأهم الآن.'],['p','إن كنت تفكر في إيذاء نفسك فاتصل فوراً برقم الطوارئ المحلي (**112** في تركيا) أو تواصل مع شخص تثق به. لست وحدك ويمكنك مواصلة الكتابة هنا.']],
+    seeSite: 'افتح الصفحة', openDiyanet: 'الديانة', ayahSrc: 'نص الآية: alquran.cloud', ask: 'هل من شيء آخر؟', searchChip: (kw) => `ابحث في الآيات عن «${kw}»`,
+    chips: [['⏰ مواقيت الصلاة','مواقيت الصلاة'],['💧 الوضوء','فرائض الوضوء'],['📖 آية الكرسي','آية الكرسي'],['🔎 آيات الصبر','آيات عن الصبر'],['🕌 فرائض الصلاة','فرائض الصلاة'],['🔢 عدد الركعات','عدد ركعات الصلوات'],['🤲 الزكاة','مصارف الزكاة'],['🧭 القبلة','كيف أجد اتجاه القبلة؟'],['🧩 الفرائض 32','ما هي الفرائض الاثنان والثلاثون؟'],['❓ ماذا تستطيع؟','ماذا تستطيع أن تفعل؟']] }
+};
 
-        function sendSuggestion(text) {
-            appendMessage(text, 'user');
-            setTimeout(() => {
-                const response = getBotResponse(text);
-                appendMessage(response, 'bot');
-            }, 600);
-        }
+// rekât tablosu (kaynak: islamveihsan namaz çeşitleri + Diyanet ilmihali esaslı haberler)
+const REKAT = {
+  names: { tr: ['Sabah','Öğle','İkindi','Akşam','Yatsı'], en: ['Fajr','Dhuhr','Asr','Maghrib','Isha'], ar: ['الفجر','الظهر','العصر','المغرب','العشاء'] },
+  head: { tr: ['Vakit','Farzdan önce (sünnet)','Farz','Farzdan sonra (sünnet)','Vitir'], en: ['Prayer','Before fard (sunnah)','Fard','After fard (sunnah)','Witr'], ar: ['الصلاة','قبل الفرض (سنة)','الفرض','بعد الفرض (سنة)','الوتر'] },
+  rows: [['2','2','–','–'],['4','4','2','–'],['4','4','–','–'],['–','3','2','–'],['4','4','2','3']],
+  re: [/sabah|fajr|dawn|فجر|صبح/, /ogle|dhuhr|zuhr|noon|ظهر/, /ikindi|\basr\b|عصر/, /aksam|maghrib|مغرب/, /yatsi|isha|عشاء/],
+  note: { tr: ['Günlük farz namazlar toplam 17 rekâttır. İkindi ve yatsının ilk 4 rekât sünneti gayr-i müekkeddir. Şâfiî gibi diğer mezheplerde sünnet sayıları farklı olabilir; vitir Hanefî mezhebine göre vâciptir.'], en: ['The daily fard prayers total 17 rak‘ahs. The first 4-rak‘ah sunnah of Asr and Isha is ghayr-i mu’akkad. Other schools such as the Shafi‘i count sunnahs differently; witr is wājib in the Hanafi school.'], ar: ['مجموع الفرائض اليومية 17 ركعة. والسنة القبلية (أربع ركعات) للعصر والعشاء غير مؤكدة. وتختلف أعداد السنن في المذاهب الأخرى كالشافعي؛ والوتر واجب عند الحنفية.'] }
+};
 
-        function sendMessage() {
-            const inputField = document.getElementById('userInput');
-            const text = inputField.value.trim();
-            if (!text) return;
+// =====================================================================
+//  MANTIK
+// =====================================================================
+const lang = (['tr','en','ar'].includes(localStorage.getItem('user_lang'))) ? localStorage.getItem('user_lang') : 'tr';
+const T = UI[lang];
+const pick = (o) => (o && (o[lang] || o.tr));
 
-            appendMessage(text, 'user');
-            inputField.value = '';
+function fold(s) {
+  s = String(s).toLocaleLowerCase('tr');
+  return s.replace(/[âäà]/g,'a').replace(/[îı]/g,'i').replace(/[ûü]/g,'u').replace(/ê/g,'e').replace(/ö/g,'o').replace(/ç/g,'c').replace(/ğ/g,'g').replace(/ş/g,'s')
+          .replace(/[\u064B-\u065F\u0670\u0640]/g,'').replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه');
+}
+function norm(s) {
+  return fold(s).replace(/['’`ʼʻ‘]/g,'').replace(/[^a-z0-9\u0600-\u06FF:\-\/ ]+/g,' ').replace(/\s+/g,' ').trim();
+}
+// desenleri aynı harf eşlemesinden geçir (Arapça desenler için)
+const rxFold = (r) => new RegExp(fold(r.source), r.flags);
 
-            setTimeout(() => {
-                const response = getBotResponse(text);
-                appendMessage(response, 'bot');
-            }, 600);
-        }
+// Sure adı eşleştirme tablosu (Türkçe adlar + servisten gelen İngilizce/Arapça adlar)
+const SURAH_KEYS = [];   // {n, re}
+function addSurahKey(n, name) {
+  const letters = norm(name).replace(/[^a-z\u0600-\u06FF]/g, '');
+  if (letters.length < 3) return;
+  const body = letters.split('').join("[\\s\\-]*");
+  SURAH_KEYS.push({ n, len: letters.length, re: new RegExp('(?:^|\\s)(' + body + ')(?=$|[\\s\\d:\\-\\/.,!?])') });
+}
+SURAH_TR.forEach((names, i) => names.split('|').forEach(nm => addSurahKey(i + 1, nm)));
+let surahListLoaded = false;
+async function ensureSurahList() {
+  if (surahListLoaded) return;
+  surahListLoaded = true;
+  try {
+    const r = await fetch(API + '/surah'); const j = await r.json();
+    (j.data || []).forEach(s => {
+      addSurahKey(s.number, String(s.name || '').replace(/^سورة\s*/, ''));
+      const en = norm(s.englishName || '');
+      addSurahKey(s.number, en);
+      const stripped = en.replace(/^(al|an|ar|as|ash|at|az|ad|adh)[\s\-]+/, '');
+      if (stripped !== en) addSurahKey(s.number, stripped);
+    });
+    SURAH_KEYS.sort((a, b) => b.len - a.len);
+  } catch (e) { surahListLoaded = false; }
+}
+SURAH_KEYS.sort((a, b) => b.len - a.len);
 
-        function handleKeyPress(event) {
-            if (event.key === 'Enter') {
-                sendMessage();
-            }
-        }
+// Mesaj içinden âyet referansı çıkar → {kind:'ayah', s, a, b} | {kind:'surah', s} | null
+function parseRef(n) {
+  if (/ayetel ?kursi|ayat ?(al|el)?[\s\-]?kursi|ayatul ?kursi|ayat ?al ?kursi|اية الكرسي|ايه الكرسي/.test(n)) return { kind: 'ayah', s: 2, a: 255, b: 255 };
+  let m = n.match(/(?:^|\s)(\d{1,3})\s*[:\/]\s*(\d{1,3})(?:\s*-\s*(\d{1,3}))?(?=$|\s)/);
+  if (m) return { kind: 'ayah', s: +m[1], a: +m[2], b: m[3] ? +m[3] : +m[2] };
+  const hasSureWord = /\bsure|\bsurah|\bsura\b|سوره/.test(n);
+  for (const k of SURAH_KEYS) {
+    const mm = k.re.exec(n);
+    if (!mm) continue;
+    const end = mm.index + mm[0].length;
+    const rest = n.slice(end);
+    const after = rest.match(/^\s*(?:suresi\w*|sure\w*|surah|sura|سوره)?\s*[:.,]?\s*(?:ayet\w*|ayah|verse)?\s*(\d{1,3})(?:\s*-\s*(\d{1,3}))?(?=$|\s)/);
+    if (after) return { kind: 'ayah', s: k.n, a: +after[1], b: after[2] ? +after[2] : +after[1] };
+    const alone = n === mm[1].trim() || n === (mm[1].trim() + ' suresi') || n === ('surah ' + mm[1].trim()) || n === ('sure ' + mm[1].trim());
+    if (hasSureWord || alone) return { kind: 'surah', s: k.n };
+  }
+  return null;
+}
 
-        // --- 5. ÜÇ DİLDE AKILLI CEVAP MEKANİZMASI ---
-        function getBotResponse(input) {
-            const text = input.toLowerCase();
+// ---- Canlı Kur'an servisi ----
+async function jget(url) { const r = await fetch(url); if (!r.ok) throw new Error('http ' + r.status); const j = await r.json(); if (j.code !== 200) throw new Error('api ' + j.code); return j.data; }
+async function fetchAyah(ref) {
+  const eds = ['quran-uthmani'].concat(MEAL[lang] ? [MEAL[lang]] : []);
+  const d = await jget(`${API}/ayah/${ref}/editions/${eds.join(',')}`);
+  const ar = d.find(x => x.edition && x.edition.identifier === 'quran-uthmani') || d[0];
+  const tr = MEAL[lang] ? d.find(x => x.edition && x.edition.identifier === MEAL[lang]) : null;
+  return { ar: ar.text, tr: tr ? tr.text : '', s: ar.surah, n: ar.numberInSurah };
+}
+async function fetchSurahRange(sNo, from, to) {
+  const eds = ['quran-uthmani'].concat(MEAL[lang] ? [MEAL[lang]] : []);
+  const d = await jget(`${API}/surah/${sNo}/editions/${eds.join(',')}`);
+  const ar = d[0], tr = d[1] || null;
+  const out = [];
+  for (let i = from - 1; i < Math.min(to, ar.ayahs.length); i++) out.push({ ar: ar.ayahs[i].text, tr: tr ? tr.ayahs[i].text : '', s: { number: ar.number, name: ar.name, englishName: ar.englishName }, n: ar.ayahs[i].numberInSurah });
+  return { items: out, total: ar.ayahs.length };
+}
+function ayahBlock(a) {
+  return ['ayah', { ar: a.ar, tr: a.tr, ref: `${a.s.englishName} (${a.s.name}) ${a.s.number}:${a.n}` }];
+}
 
-            // === TÜRKÇE CEVAPLAR ===
-            if (currentLang === 'tr') {
-                if (text.includes('namaz') || text.includes('vakit') || text.includes('ezan') || text.includes('imsak') || text.includes('yatsı') || text.includes('ikindi') || text.includes('öğle')) {
-                    return "Namaz, dinin direği ve müminin miracıdır kardeşim. Bulunduğun konuma ait en doğru namaz vakitlerini ana sayfadaki vakit çizelgesinden takip edebilirsin.";
-                } else if (text.includes('kaza')) {
-                    return "Geçmişte kılınamayan namazlar için kaza namazı kılmak borç ödemek gibidir. Her vakit namazının ardından kaza namazı kılarak borçlarını kapatabilirsin kardeşim.";
-                } else if (text.includes('abdest')) {
-                    return "Abdest namazın anahtarıdır. Eller, ağız, burun, yüz ve kollar dirseklerle yıkanır, baş ve kulaklar meshedilip ayaklar yıkanır. Tuvalet ihtiyacı veya kanama gibi durumlar abdesti bozar.";
-                } else if (text.includes('gusül') || text.includes('boy abdesti')) {
-                    return "Gusül abdesti; ağza ve burna bolca su verip tüm vücudu iğne ucu kadar kuru yer kalmayacak şekilde yıkamaktır kardeşim.";
-                } else if (text.includes('selam') || text.includes('merhaba')) {
-                    return "Aleykümselam ve rahmetullah kardeşim! Bugün sana dini konularda nasıl yardımcı olabilirim?";
-                } else if (text.includes('oruç') || text.includes('sahur') || text.includes('iftar')) {
-                    return "Oruç kalkandır kardeşim. Sahurda bereket vardır, ibadetlerini huzurla eda etmeni dilerim.";
-                } else if (text.includes('zekat') || text.includes('sadaka')) {
-                    return "Zekat ve sadaka malı arındırır, bereket getirir kardeşim. Nisap miktarı malı olanların ihtiyaç sahiplerine zekat vermesi farzdır.";
-                } else if (text.includes('kuran') || text.includes('ayet')) {
-                    return "\"Şüphesiz kalpler ancak Allah'ı anmakla huzur bulur.\" (Ra'd Suresi, 28) 📖 Uygulamamızın Kur'an bölümünden dilediğin sureyi okuyabilirsin.";
-                } else if (text.includes('kıble') || text.includes('pusula')) {
-                    return "Kıble yönünü bulmak için menüdeki 'Kıble Pusulası' özelliğini kullanabilirsin kardeşim.";
-                } else if (text.includes('esma')) {
-                    return "Esmaül Hüsna, Allah'ın 99 güzel ismidir. Ana menüden Esmaül Hüsna sayfasına göz atabilirsin kardeşim.";
-                } else {
-                    return "Harika ve önemli bir soru kardeşim! Bunu not aldım. Sana başka hangi dini konuda yardımcı olabilirim?";
-                }
-            }
+// ---- Rekât tablosu bloğu ----
+function rekatBlocks(n) {
+  let idx = REKAT.re.findIndex(r => rxFold(r).test(n));
+  const rows = (idx >= 0 ? [idx] : [0,1,2,3,4]).map(i => [REKAT.names[lang][i]].concat(REKAT.rows[i]));
+  const title = { tr: 'Vakit Namazlarının Rekât Sayıları', en: 'Rak‘ah Counts of the Daily Prayers', ar: 'عدد ركعات الصلوات اليومية' }[lang];
+  return [['h', title], ['table', { head: REKAT.head[lang], rows }], ['note', REKAT.note[lang][0]], ['src', SREK]];
+}
 
-            // === İNGİLİZCE CEVAPLAR (ENGLISH) ===
-            else if (currentLang === 'en') {
-                if (text.includes('namaz') || text.includes('prayer') || text.includes('time') || text.includes('fajr') || text.includes('dhuhr') || text.includes('asr') || text.includes('maghrib') || text.includes('isha')) {
-                    return "Prayer is the pillar of religion, my brother/sister. You can track the most accurate prayer times for your location on our home page.";
-                } else if (text.includes('wudu') || text.includes('ablution')) {
-                    return "Wudu is the key to prayer. Wash hands, mouth, nose, face, and arms up to elbows, wipe head and ears, and wash feet.";
-                } else if (text.includes('ghusl') || text.includes('bath')) {
-                    return "Ghusl involves rinsing mouth, nose, and washing the entire body thoroughly leaving no dry spot.";
-                } else if (text.includes('hello') || text.includes('hi') || text.includes('salam')) {
-                    return "Wa Alaikum Assalam! How can I assist you with religious matters today?";
-                } else if (text.includes('fasting') || text.includes('ramadan') || text.includes('suhoor') || text.includes('iftar')) {
-                    return "Fasting is a shield. Remember to have suhoor as it carries blessings. May Allah accept your worship.";
-                } else if (text.includes('zakat') || text.includes('charity')) {
-                    return "Zakat purifies wealth and brings abundance. Giving zakat to those in need is an essential obligation in Islam.";
-                } else if (text.includes('quran') || text.includes('verse') || text.includes('ayah')) {
-                    return "\"Unquestionably, by the remembrance of Allah hearts find rest.\" (Surah Ar-Ra'd, 28) 📖 You can read Surahs from our Quran section.";
-                } else if (text.includes('qibla') || text.includes('compass')) {
-                    return "You can easily find the direction of Kabaa using the 'Qibla Compass' feature in the menu.";
-                } else if (text.includes('asma') || text.includes('names')) {
-                    return "Asma-ul Husna are the 99 beautiful names of Allah. Check out the Asma-ul Husna page in the main menu!";
-                } else {
-                    return "That is a great and important topic! I have noted it down. How else can I assist you today?";
-                }
-            }
+// ---- Anahtar kelime çıkarma (âyet arama) ----
+const STOP = new Set(['ayet','ayeti','ayetler','ayetleri','ayetin','ilgili','hakkinda','hakkindaki','var','mi','mu','ara','bul','goster','getir','ver','bir','bana','kuran','kuranda','kurandan','de','da','ne','nedir','gecen','gecenler','kelime','kelimesi','sure','suresi','ve','icin','hangi','ile','olan','konusunda','lutfen',
+  'verse','verses','ayah','ayat','about','on','quran','the','of','in','search','find','show','me','a','an','for','with','related','that','mention','mentions','regarding',
+  'اية','ايه','ايات','آيات','عن','في','القران','قران','ابحث','اريد','عن','حول','من','هل']);
+function extractKeyword(text) {
+  const raw = text.toLocaleLowerCase('tr').replace(/^\s*(ara|ayet ara|search|بحث)\s*[:\-]\s*/, '');
+  const toks = raw.split(/[^\p{L}\p{M}]+/u).filter(Boolean);
+  const cands = toks.filter(t => !STOP.has(norm(t)) && t.length >= 3);
+  if (!cands.length) return '';
+  return cands.sort((a, b) => b.length - a.length)[0];
+}
+async function searchAyahs(kw) {
+  const d = await jget(`${API}/search/${encodeURIComponent(kw)}/all/${SEARCH_ED[lang]}`);
+  return d || { count: 0, matches: [] };
+}
 
-            // === ARAPÇA CEVAPLAR (ARABIC) ===
-            else if (currentLang === 'ar') {
-                if (text.includes('صلاة') || text.includes('وقت') || text.includes('أذان') || text.includes('فجر') || text.includes('ظهر') || text.includes('عصر') || text.includes('مغرب') || text.includes('عشاء')) {
-                    return "الصلاة عماد الدين ومعراج المؤمن يا أخي. يمكنك متابعة أدق مواقيت الصلاة لموقعك من الصفحة الرئيسية.";
-                } else if (text.includes('وضوء') || text.includes('أتوضأ')) {
-                    return "الوضوء مفتاح الصلاة. يتم غسل اليدين، الفم، الأنف، الوجه، واليدين إلى المرفقين، ومسح الرأس والأنفين وغسل القدمين.";
-                } else if (text.includes('غسل') || text.includes('الجنابة')) {
-                    return "الغسل يتضمن المضمضة والاستنشاق وغسل الجسد كاملاً دون ترك أي جزء جاف.";
-                } else if (text.includes('سلام') || text.includes('مرحبا') || text.includes('أهلا')) {
-                    return "وعليكم السلام ورحمة الله وبركاته يا أخي! كيف يمكنني مساعدتك في الأمور الدينية اليوم؟";
-                } else if (text.includes('صوم') || text.includes('صيام') || text.includes('سحور') || text.includes('إفطار')) {
-                    return "الصوم جنة ووقاية. التسحر فيه بركة، تقبل الله طاعاتكم وصالح أعمالكم.";
-                } else if (text.includes('زكاة') || text.includes('صدقة')) {
-                    return "الزكاة تطهر المال وتجلب البركة. إيتاء الزكاة للمستحقين من أركان الإسلام الأساسية.";
-                } else if (text.includes('قرآن') || text.includes('آية') || text.includes('سورة')) {
-                    return "\"أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ\" (سورة الرعد، 28) 📖 يمكنك قراءة السور من قسم القرآن في تطبيقنا.";
-                } else if (text.includes('قبلة') || text.includes('بوصلة')) {
-                    return "يمكنك العثور على اتجاه الكعبة المشرفة بسهولة باستخدام ميزة 'بوصلة القبلة' في القائمة.";
-                } else if (text.includes('أسماء') || text.includes('الحسنى')) {
-                    return "أسماء الله الحسنى هي 99 اسماً مباركاً. يمكنك الاطلاع عليها في صفحة أسماء الله الحسنى من القائمة الرئيسية.";
-                } else {
-                    return "سؤال رائع ومهم جداً يا أخي! لقد دونت هذا. كيف يمكنني مساعدتك أكثر؟";
-                }
-            }
-        }
+// ---- Yönlendirici ----
+const CRISIS = /intihar|olmek istiyorum|kendime zarar|yasamak istemiyorum|kill myself|suicid|want to die|end my life|انتحار|اريد ان اموت|اقتل نفسي/;
+const GREET = /^(selam|selamun aleykum|selamunaleykum|merhaba|meraba|slm|hello|hi|hey|salam|assalamu alaikum|assalamu alaykum|as-?salamu alaykum|السلام عليكم|مرحبا|اهلا|سلام)\b/;
+const THANKS = /tesekkur|sagol|sag ol|eyvallah|allah razi|thank|jazak|شكرا|جزاك/;
+const HELP = /neler yapabil|ne yapabil|yardim|nasil kullan|what can you|help me|how do you work|ماذا تستطيع|مساعده|ماذا يمكنك/;
 
-        // --- 6. SAYFA BAŞLATMA ---
-        updateThemeIcon();
-        initUI();
+function diyanetLinks() { return ['links', [{ label: T.openDiyanet + ' ↗', href: 'https://www.diyanet.gov.tr', ext: true }]]; }
+function pageLinks(ids) { return ['links', ids.map(id => ({ label: PAGES[id].l[lang], href: SITE + (PAGES[id].repo ? PAGES[id].repo + '/' : '') }))]; }
+function followChips(ids) { return ['chips', ids.map(id => ({ label: kbTitle(id), run: () => answerKb(id) }))]; }
+function kbTitle(id) {
+  if (id === 'rekat') return { tr: 'Rekât sayıları', en: 'Rak‘ah counts', ar: 'عدد الركعات' }[lang];
+  const e = KB[id]; const h = (pick(e) || []).find(b => b[0] === 'h'); return h ? h[1] : id;
+}
+
+async function answerKb(id, rawNorm) {
+  const e = KB[id];
+  addUser(kbTitle(id));
+  await botTurn(async () => kbReply(id, rawNorm || ''));
+}
+async function kbReply(id, n) {
+  const e = KB[id];
+  const blocks = id === 'rekat' ? rekatBlocks(n) : (pick(e) || []).slice();
+  if (e.ayahs) {
+    for (const ref of e.ayahs) {
+      try { const a = await fetchAyah(ref); blocks.splice(blocks.length - 1, 0, ayahBlock(a)); } catch (x) { /* ayet kartı eklenemezse sessizce atla */ }
+    }
+  }
+  if (e.pages) blocks.push(pageLinks(e.pages));
+  if (e.follow) blocks.push(followChips(e.follow));
+  return blocks;
+}
+
+async function route(text) {
+  const n = norm(text);
+  if (CRISIS.test(fold(text))) return T.crisis.slice().concat([['links', [{ label: '112 📞', href: 'tel:112', ext: true }]]]);
+  if (n.length <= 28 && GREET.test(n) && !/\d/.test(n)) return [['p', T.greet], followChips(['farz32','namazfarz'])];
+  if (THANKS.test(n)) return [['p', T.thanks]];
+  if (HELP.test(n)) return T.help.slice();
+
+  // 1) Doğrudan âyet/sure referansı
+  await ensureSurahList();
+  const ref = parseRef(n);
+  if (ref) return await refReply(ref);
+
+  // 2) Doğrulanmış bilgi bankası
+  for (const id of Object.keys(KB)) {
+    if (KB[id].re.some(r => rxFold(r).test(n))) return await kbReply(id, n);
+  }
+  // 3) Konu → âyet kartı (+ ilgili sayfa)
+  for (const k of Object.keys(TOPIC_AYAH)) {
+    const t = TOPIC_AYAH[k];
+    if (t.re.some(r => rxFold(r).test(n))) {
+      const blocks = [['p', t[lang]]];
+      try { blocks.push(ayahBlock(await fetchAyah(t.ref))); blocks.push(['src', T.ayahSrc + ' · ' + MEAL_LABEL[lang]]); } catch (x) { blocks.push(['note', T.err]); }
+      if (t.page) blocks.push(pageLinks([t.page]));
+      if (k !== 'huzur') blocks.push(['note', { tr: 'Ayrıntılı hükümler (miktar, şartlar vb.) için Diyanet’e başvur.', en: 'For detailed rulings (amounts, conditions, etc.) consult Diyanet.', ar: 'للأحكام التفصيلية (المقادير والشروط وغيرها) راجع الديانة.' }[lang]], diyanetLinks());
+      return blocks;
+    }
+  }
+  // 4) Site sayfaları
+  for (const [id, r] of PAGE_RULES) {
+    if (rxFold(r).test(n)) { const p = PAGES[id]; return [['p', p.d[lang]], pageLinks([id])]; }
+  }
+  // 5) Âyet arama
+  if (/ayet|ayah|verse|quran|kuran|sure|^ara\s*[:\-]|^search\s*[:\-]|اية|ايه|ايات|القران|قران|بحث/.test(n)) {
+    const kw = extractKeyword(text);
+    if (kw) return await searchReply(kw);
+  }
+  // 6) Bilinmeyen → uydurma yok
+  const kw = extractKeyword(text);
+  const blocks = T.unknown.slice();
+  blocks.push(diyanetLinks());
+  if (kw) blocks.push(['chips', [{ label: T.searchChip(kw), run: () => runSearch(kw) }]]);
+  blocks.push(followChips(['farz32','namazfarz','rekat']));
+  return blocks;
+}
+
+async function refReply(ref) {
+  try {
+    if (ref.kind === 'surah') {
+      const { items, total } = await fetchSurahRange(ref.s, 1, 10);
+      const blocks = items.map(ayahBlock);
+      if (total > items.length) blocks.push(['note', T.surahCut(total, items.length)]);
+      blocks.push(['src', T.ayahSrc + ' · ' + MEAL_LABEL[lang]]);
+      blocks.push(pageLinks(['kuran']));
+      return blocks;
+    }
+    if (ref.s < 1 || ref.s > 114 || ref.a < 1) return [['p', T.noAyah]];
+    const to = Math.min(ref.b >= ref.a ? ref.b : ref.a, ref.a + 9);
+    let items;
+    if (to === ref.a) items = [await fetchAyah(`${ref.s}:${ref.a}`)];
+    else items = (await fetchSurahRange(ref.s, ref.a, to)).items;
+    if (!items.length) return [['p', T.noAyah]];
+    const blocks = items.map(ayahBlock);
+    blocks.push(['src', T.ayahSrc + ' · ' + MEAL_LABEL[lang]]);
+    blocks.push(pageLinks(['kuran']));
+    return blocks;
+  } catch (e) {
+    return [['p', /http 404|api 404|api 400/.test(String(e)) ? T.noAyah : T.err], pageLinks(['kuran'])];
+  }
+}
+
+async function searchReply(kw) {
+  try {
+    const res = await searchAyahs(kw);
+    const all = res.matches || [];
+    if (!all.length) return [['p', T.noSearch], pageLinks(['kuran'])];
+    const top = all.slice(0, 5);
+    const blocks = [['p', T.searched(kw, res.count || all.length, top.length)]];
+    const arabic = await Promise.all(top.map(m => jget(`${API}/ayah/${m.surah.number}:${m.numberInSurah}/quran-uthmani`).catch(() => null)));
+    top.forEach((m, i) => {
+      const isArEd = SEARCH_ED[lang] === 'quran-simple';
+      blocks.push(ayahBlock({ ar: arabic[i] ? arabic[i].text : (isArEd ? m.text : ''), tr: isArEd ? '' : m.text, s: m.surah, n: m.numberInSurah }));
+    });
+    blocks.push(['src', T.ayahSrc + ' · ' + MEAL_LABEL[lang]]);
+    blocks.push(['note', T.more]);
+    blocks.push(pageLinks(['kuran']));
+    return blocks;
+  } catch (e) { return [['p', T.err], pageLinks(['kuran'])]; }
+}
+async function runSearch(kw) { addUser(T.searchChip(kw)); await botTurn(() => searchReply(kw)); }
+
+// =====================================================================
+//  ARAYÜZ
+// =====================================================================
+let busy = false;
+const chat = () => document.getElementById('chatContainer');
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function rich(parent, text) {
+  String(text).split(/(\*\*[^*]+\*\*)/).forEach(p => {
+    if (/^\*\*.+\*\*$/.test(p)) parent.appendChild(el('strong', null, p.slice(2, -2)));
+    else if (p) parent.appendChild(document.createTextNode(p));
+  });
+}
+function renderBlocks(box, blocks) {
+  let plain = [];
+  blocks.forEach(b => {
+    const [k, v] = b;
+    if (k === 'h') { box.appendChild(el('div', 'b-h', v)); plain.push(v); }
+    else if (k === 'p') { const p = el('div', 'b-p'); rich(p, v); box.appendChild(p); plain.push(v.replace(/\*\*/g, '')); }
+    else if (k === 'ul' || k === 'ol') { const l = el(k); v.forEach((t, i) => { const li = el('li'); rich(li, t); l.appendChild(li); plain.push((k === 'ol' ? (i + 1) + '. ' : '• ') + t.replace(/\*\*/g, '')); }); box.appendChild(l); }
+    else if (k === 'table') {
+      const w = el('div', 'tbl-wrap'), t = el('table'), tr0 = el('tr');
+      v.head.forEach(h => tr0.appendChild(el('th', null, h))); t.appendChild(tr0);
+      v.rows.forEach(r => { const tr = el('tr'); r.forEach(c => tr.appendChild(el('td', null, c))); t.appendChild(tr); plain.push(r.join(' | ')); });
+      w.appendChild(t); box.appendChild(w);
+    }
+    else if (k === 'note') { box.appendChild(el('div', 'b-note', v)); plain.push(v); }
+    else if (k === 'src') { box.appendChild(el('div', 'b-src', '📚 ' + v)); plain.push(v); }
+    else if (k === 'ayah') {
+      const c = el('div', 'ayah-card');
+      if (v.ar) c.appendChild(el('div', 'ayah-ar', v.ar));
+      if (v.tr) c.appendChild(el('div', 'ayah-tr', v.tr));
+      c.appendChild(el('div', 'ayah-ref', v.ref));
+      box.appendChild(c); plain.push((v.ar ? v.ar + '\n' : '') + (v.tr ? v.tr + '\n' : '') + v.ref);
+    }
+    else if (k === 'links') {
+      const row = el('div', 'links-row');
+      v.forEach(l => { const a = el('a', 'link-btn', l.label); a.href = l.href; if (l.ext) { a.target = '_blank'; a.rel = 'noopener noreferrer'; } row.appendChild(a); });
+      box.appendChild(row);
+    }
+    else if (k === 'chips') {
+      const row = el('div', 'chips-row');
+      v.forEach(c => { const bt = el('button', 'mini-chip', c.label); bt.onclick = () => { if (!busy) { busy = true; Promise.resolve(c.run()).finally(() => { busy = false; setSend(); }); setSend(); } }; row.appendChild(bt); });
+      box.appendChild(row);
+    }
+  });
+  return plain.join('\n');
+}
+function setSend() { document.getElementById('send-btn').disabled = busy; }
+function addUser(text) { const d = el('div', 'message user', text); chat().appendChild(d); d.scrollIntoView({ block: 'end' }); }
+function addTyping() { const d = el('div', 'message bot'); const t = el('div', 'typing'); t.innerHTML = '<span></span><span></span><span></span>'; d.appendChild(t); chat().appendChild(d); d.scrollIntoView({ block: 'end' }); return d; }
+function addBot(blocks) {
+  const d = el('div', 'message bot');
+  const plain = renderBlocks(d, blocks);
+  const cb = el('button', 'copy-btn', T.copy);
+  cb.onclick = () => { (navigator.clipboard ? navigator.clipboard.writeText(plain) : Promise.reject()).then(() => { cb.textContent = T.copied; setTimeout(() => cb.textContent = T.copy, 1500); }).catch(() => {}); };
+  d.appendChild(cb); chat().appendChild(d); d.scrollIntoView({ block: 'start' });
+}
+async function botTurn(fn) {
+  const typing = addTyping();
+  try { const blocks = await fn(); typing.remove(); addBot(blocks); }
+  catch (e) { typing.remove(); addBot([['p', T.err]]); }
+}
+async function handleUser(text) {
+  if (busy) return; busy = true; setSend();
+  addUser(text);
+  await botTurn(() => route(text));
+  busy = false; setSend();
+}
+function sendMessage() { const i = document.getElementById('userInput'); const v = i.value.trim(); if (!v || busy) return; i.value = ''; handleUser(v); }
+function sendSuggestion(q) { handleUser(q); }
+
+function newChat() { chat().innerHTML = ''; addBot(T.welcome.slice()); }
+
+// ---- Tema ----
+function syncThemeColor() {
+  const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg-color').trim();
+  const m = document.getElementById('themeColorMeta'); if (m && bg) m.setAttribute('content', bg);
+}
+function updateThemeIcon() { document.getElementById('themeIcon').textContent = document.documentElement.classList.contains('light-mode') ? '☀️' : '🌙'; }
+function toggleTheme() {
+  document.documentElement.classList.toggle('light-mode');
+  localStorage.setItem('theme', document.documentElement.classList.contains('light-mode') ? 'light' : 'dark');
+  updateThemeIcon(); syncThemeColor();
+}
+
+function initUI() {
+  document.title = T.docTitle;
+  document.getElementById('header-title').textContent = T.headerTitle;
+  const inp = document.getElementById('userInput'); inp.placeholder = T.ph;
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sendMessage(); } });
+  document.getElementById('send-btn').textContent = T.send;
+  document.getElementById('newChatBtn').title = T.newChat;
+  const sc = document.getElementById('suggestionsContainer'); sc.innerHTML = '';
+  T.chips.forEach(([label, q]) => { const b = el('button', 'suggestion-chip', label); b.onclick = () => sendSuggestion(q); sc.appendChild(b); });
+  addBot(T.welcome.slice());
+}
+updateThemeIcon(); syncThemeColor(); initUI();
+window.addEventListener('storage', () => { syncThemeColor(); });
     </script>
 </body>
 </html>
