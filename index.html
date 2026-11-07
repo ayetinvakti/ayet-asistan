@@ -351,7 +351,7 @@ const UI = {
     surahCut: (n, shown) => `Sure ${n} âyet; ilk ${shown} âyeti gösteriyorum. Tamamını Kur’an Oku sayfasından okuyabilirsin.`,
     greet: 'Aleykümselâm ve rahmetullâh! Sana nasıl yardımcı olabilirim?', thanks: 'Allah razı olsun. Başka bir sorun olursa buradayım.',
     help: [['h','Neler yapabilirim?'],['ul',['**Âyet getirme:** “Bakara 255”, “2:255”, “Yâsîn suresi 1-5”, “İhlâs suresi”, “Ayetel Kürsî”','**Âyet arama:** “sabır ile ilgili ayet”, “ara: merhamet”','**Temel bilgiler:** 32 farz, abdest, gusül, teyemmüm, namazın farzları, rekât sayıları, vitir, cuma','**Site rehberi:** hangi sayfada ne var, nasıl ulaşılır']],['note','Kaynağı doğrulanmamış dini bilgi vermem.']],
-    unknown: [['p','Bu konuda **doğrulanmış bir kaynağım yok**; yanlış bilgi vermemek için tahminde bulunmuyorum.'],['p','Fıkhî ve ayrıntılı dini sorular için yetkili kaynağa danışman en güvenlisidir: Diyanet İşleri Başkanlığı (Alo 190 Fetva Hattı, il/ilçe müftülükleri).']],
+    unknown: [['p','Bunu tam anlayamadım ya da bu konuda **doğrulanmış bir kaynağım yok**; yanlış bilgi vermemek için tahminde bulunmuyorum. İstersen soruyu farklı sözlerle yaz, bir âyet ara ya da aşağıdaki konulardan birini seç.'],['p','Fıkhî ve ayrıntılı dini sorular için yetkili kaynağa danışman en güvenlisidir: Diyanet İşleri Başkanlığı (Alo 190 Fetva Hattı, il/ilçe müftülükleri).']],
     crisis: [['p','Yaşadığın şey çok ağır görünüyor; bunu yazdığın için sağ ol. Şu an güvende olmak çok önemli.'],['p','Kendine zarar verme düşüncen varsa lütfen hemen **112**’yi ara ya da yanındaki güvendiğin birine ulaş. Yalnız değilsin; buradan sonra da yazabilirsin.']],
     seeSite: 'Sayfaya git', openDiyanet: 'Diyanet', ayahSrc: 'Âyet metni: alquran.cloud', ask: 'Sorabileceğin başka bir şey var mı?', searchChip: (kw) => `“${kw}” için ayet ara`,
     chips: [['⏰ Namaz Vakitleri','Namaz vakitleri'],['💧 Abdest','Abdestin farzları nelerdir?'],['📖 Ayetel Kürsî','Ayetel Kürsî'],['🔎 Sabır ayetleri','Sabır ile ilgili ayet'],['🕌 Namazın Farzları','Namazın farzları'],['🔢 Rekât Sayıları','Rekât sayıları'],['🤲 Zekât','Zekât kimlere verilir?'],['🧭 Kıble','Kıbleyi nasıl bulabilirim?'],['🧩 32 Farz','32 farz nedir?'],['❓ Neler yapabilirsin?','Neler yapabilirsin?']] },
@@ -535,12 +535,56 @@ async function kbReply(id, n) {
   return blocks;
 }
 
+
+// ---- Sohbet katmanı (dini içerik DEĞİL; selamlaşma, hal hatır, saat/tarih vb.) ----
+const rndOf = a => a[Math.floor(Math.random() * a.length)];
+const SMALL = [
+  { re: /nasilsin|naber|ne haber|nasil gidiyor|how are you|how'?s it going|what'?s up|كيف حالك|كيفك|شلونك/,
+    tr: ['İyiyim, sorduğun için sağ ol! Senin günün nasıl geçiyor?', 'Çok iyiyim, hizmetinde olmak güzel. Sen nasılsın?', 'Elhamdülillah iyiyim. Seni dinliyorum; bir şey sormak ister misin?'],
+    en: ['I am doing well, thank you for asking! How is your day going?', 'Great, glad to be here. How are you?'],
+    ar: ['أنا بخير، شكراً لسؤالك! كيف يومك؟', 'بخير والحمد لله. وأنت كيف حالك؟'] },
+  { re: /ne yapiyorsun|napiyorsun|ne ile ugrasiyorsun|what are you doing|what are you up to|ماذا تفعل|شو تسوي/,
+    tr: ['Şu an seninle sohbet ediyorum; âyet getirmek, temel ibadet bilgilerini söylemek ve sitede doğru sayfayı bulmana yardım etmek benim işim.', 'Senin sorularını bekliyordum. Âyet mi arayalım, yoksa bir sayfaya mı gidelim?'],
+    en: ['Right now I am chatting with you; I fetch verses, share core worship facts and guide you around the site.', 'I was waiting for your questions. Shall we look up a verse or open a page?'],
+    ar: ['الآن أتحدث معك؛ أجلب الآيات وأذكر أساسيات العبادة وأرشدك في الموقع.', 'كنت أنتظر أسئلتك. هل نبحث عن آية أم نفتح صفحة؟'] },
+  { re: /kimsin|adin ne|ismin ne|sen kimsin|kendini tanit|who are you|your name|what are you|من انت|ما اسمك/,
+    tr: ['Ben Ayetin Vakti’nin Vakit Asistanıyım. Âyetleri canlı kaynaktan getiririm, kaynağı belli temel bilgileri paylaşırım ve sitedeki sayfalara yönlendiririm.'],
+    en: ['I am the Time Assistant of Ayetin Vakti. I fetch verses from a live source, share well-sourced basics and guide you to the site pages.'],
+    ar: ['أنا مساعد الوقت في موقع «وقت الآية». أجلب الآيات من مصدر مباشر وأذكر أساسيات موثّقة وأرشدك إلى صفحات الموقع.'] },
+  { re: /insan misin|robot musun|yapay zeka misin|bot musun|are you (a )?(human|robot|bot|an ai)|هل انت (انسان|روبوت)/,
+    tr: ['Hayır, insan değilim; bir yazılım asistanıyım. Bu yüzden bilmediğim dini konuda tahmin yürütmem, doğrulanmış kaynağa yönlendiririm.'],
+    en: ['No, I am not a person; I am a software assistant. That is why I never guess on religious matters I cannot verify; I point you to a verified source.'],
+    ar: ['لا، لست إنساناً؛ أنا مساعد برمجي. ولذلك لا أخمّن في أمر ديني لا أستطيع التحقق منه، بل أحيلك إلى مصدر موثّق.'] },
+  { re: /seni kim yapti|kim yazdi|kim gelistirdi|who (made|built|created) you|من صنعك|من طورك/,
+    tr: ['Ayetin Vakti sitesinin bir parçası olarak geliştirildim.'], en: ['I was built as part of the Ayetin Vakti site.'], ar: ['تم تطويري كجزء من موقع «وقت الآية».'] },
+  { re: /saat kac|saati soyle|what time is it|current time|كم الساعه/,
+    f: () => ({ tr: 'Cihazına göre saat ' + new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) + '. Vakitler için Namaz Vakitleri sayfasına bak.', en: 'By your device it is ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + '. See the Prayer Times page for prayer times.', ar: 'حسب جهازك الساعة الآن ' + new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }) + '.' }) },
+  { re: /bugun gunlerden ne|bugun ayin kaci|bugunun tarihi|tarih ne|what('?s| is) (the )?(date|day) today|today'?s date|ما تاريخ اليوم/,
+    f: () => ({ tr: 'Bugün ' + new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' }) + '. Dinî günler için Dini Günler sayfasına bak.', en: 'Today is ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' }) + '.', ar: 'اليوم ' + new Date().toLocaleDateString('ar', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' }) + '.' }) },
+  { re: /gunaydin|good morning|صباح الخير/, tr: ['Günaydın! Hayırlı bir gün olsun. Bugün sana nasıl yardımcı olabilirim?'], en: ['Good morning! Wishing you a good day. How can I help?'], ar: ['صباح الخير! أتمنى لك يوماً طيباً. كيف أساعدك؟'] },
+  { re: /iyi geceler|good night|تصبح على خير/, tr: ['İyi geceler, huzurlu uykular dilerim.'], en: ['Good night, sleep well.'], ar: ['تصبح على خير، نوماً هانئاً.'] },
+  { re: /gorusuruz|hoscakal|hosca kal|bye|goodbye|see you|مع السلامه|الى اللقاء/, tr: ['Görüşmek üzere, kendine iyi bak!'], en: ['See you, take care!'], ar: ['إلى اللقاء، اعتنِ بنفسك!'] },
+  { re: /harikasin|cok iyisin|aferin|bravo|you are (great|awesome|amazing)|well done|great job|ممتاز|احسنت/, tr: ['Çok naziksin, teşekkür ederim! Beğenmene sevindim.'], en: ['That is kind of you, thank you! I am glad it helps.'], ar: ['شكراً لطفك! يسعدني أن ذلك أفادك.'] },
+  { re: /espri|fikra|saka yap|tell (me )?a joke|joke|نكته/,
+    tr: ['Bilgisayar neden doktora gitmiş? Çünkü virüs kapmış! 😄', 'Telefon şarjı neden mutsuzmuş? Hep %1’de yaşıyormuş. 😄'], en: ['Why did the computer go to the doctor? It caught a virus! 😄'], ar: ['لماذا ذهب الحاسوب إلى الطبيب؟ لأنه أصيب بفيروس! 😄'] },
+  { re: /canim sikildi|sikildim|i am bored|i'm bored|زهقان|مللت/, tr: ['Sıkıldığında şunlara göz atabilirsin: Dini Tabu oyunu, Esmaül Hüsna ya da Siyer-i Nebi sayfası. İstersen sana bir âyet de getirebilirim.'], en: ['If you feel bored, try the Islamic Taboo game, Asma-ul Husna or the Sirah page. I can also fetch a verse for you.'], ar: ['إن شعرت بالملل جرّب لعبة تابو الإسلامية أو أسماء الله الحسنى أو السيرة النبوية.'] }
+];
+function smallTalk(n) {
+  for (const s of SMALL) {
+    if (!rxFold(s.re).test(n)) continue;
+    const t = s.f ? s.f()[lang] : rndOf(s[lang] || s.tr);
+    return [['p', t]];
+  }
+  return null;
+}
+
 async function route(text) {
   const n = norm(text);
   if (CRISIS.test(fold(text))) return T.crisis.slice().concat([['links', [{ label: '112 📞', href: 'tel:112', ext: true }]]]);
   if (n.length <= 28 && GREET.test(n) && !/\d/.test(n)) return [['p', T.greet], followChips(['farz32','namazfarz'])];
   if (THANKS.test(n)) return [['p', T.thanks]];
   if (HELP.test(n)) return T.help.slice();
+  const sm = smallTalk(n); if (sm) return sm;
 
   // 1) Doğrudan âyet/sure referansı
   await ensureSurahList();
