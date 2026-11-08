@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-finish-surface="card">
 <head>
+    <script src="https://ayetinvakti.github.io/finish.js?v=4"></script>
     <script src="https://ayetinvakti.github.io/menu.js" defer></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -192,13 +193,13 @@
 
     <header>
         <div style="display:flex;align-items:center;gap:8px;">
-            <a href="https://ayetinvakti.github.io/" class="nav-btn" id="back-btn" aria-label="Ana Sayfaya Dön" title="Geri">←</a>
-            <button class="nav-btn" data-drawer-toggle aria-label="Menü" aria-controls="avmDrawer" title="Menü">☰</button>
+            <a href="https://ayetinvakti.github.io/" class="nav-btn fin-btn" id="back-btn" aria-label="Ana Sayfaya Dön" title="Geri">←</a>
+            <button class="nav-btn fin-btn" data-drawer-toggle aria-label="Menü" aria-controls="avmDrawer" title="Menü">☰</button>
             <h1 id="header-title">🤖 Vakit Asistanı</h1>
         </div>
         <div class="nav-controls">
-            <button class="nav-btn" onclick="newChat()" id="newChatBtn" title="Yeni sohbet" aria-label="Yeni sohbet">🗑️</button>
-            <button class="nav-btn" onclick="toggleTheme()" id="themeIcon">☀️</button>
+            <button class="nav-btn fin-btn" onclick="newChat()" id="newChatBtn" title="Yeni sohbet" aria-label="Yeni sohbet">🗑️</button>
+            <button class="nav-btn fin-btn" onclick="toggleTheme()" id="themeIcon">☀️</button>
         </div>
     </header>
 
@@ -207,7 +208,7 @@
 
     <div class="input-container">
         <input type="text" id="userInput" placeholder="..." autocomplete="off" enterkeyhint="send">
-        <button id="send-btn" onclick="sendMessage()">Gönder</button>
+        <button id="send-btn" class="fin-btn" onclick="sendMessage()">Gönder</button>
     </div>
 
     <script>
@@ -697,7 +698,7 @@ function renderBlocks(box, blocks) {
     else if (k === 'note') { box.appendChild(el('div', 'b-note', v)); plain.push(v); }
     else if (k === 'src') { box.appendChild(el('div', 'b-src', '📚 ' + v)); plain.push(v); }
     else if (k === 'ayah') {
-      const c = el('div', 'ayah-card');
+      const c = el('div', 'ayah-card fin-card');
       if (v.ar) c.appendChild(el('div', 'ayah-ar', v.ar));
       if (v.tr) c.appendChild(el('div', 'ayah-tr', v.tr));
       c.appendChild(el('div', 'ayah-ref', v.ref));
