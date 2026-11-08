@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="tr" data-finish-surface="card">
 <head>
-    <script src="https://ayetinvakti.github.io/finish.js?v=4"></script>
+    <script src="https://ayetinvakti.github.io/finish.js?v=5"></script>
     <script src="https://ayetinvakti.github.io/menu.js" defer></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -40,12 +40,20 @@
             const text = localStorage.getItem('custom_text');
             const accent = localStorage.getItem('custom_accent');
             if (bg) root.setProperty('--bg-color', bg);
+            // Özel arka plan varsa tüm yüzeyler (üst çubuk, balonlar, kutular) mod rengi yerine ondan türetilir;
+            // böylece açık modda bile koyu özel zeminde yazılar okunur kalır. Ayrı kart rengi seçilmişse o kullanılır.
+            if (bg && !card) root.setProperty('--chat-bg', bg);
             if (card) root.setProperty('--chat-bg', card);
             if (text) root.setProperty('--text-color', text);
             // Özel arka plan var, yazı rengi seçilmemişse: okunabilir yazı rengi otomatik
             if (bg && !text) {
                 const l = hexLum(bg);
                 if (l !== null) root.setProperty('--text-color', l > 0.45 ? '#1e293b' : '#f8fafc');
+            }
+            if (bg || card) {
+                root.setProperty('--bot-msg-bg', 'color-mix(in srgb, var(--text-color) 10%, ' + (card || bg) + ')');
+                root.setProperty('--border-color', 'color-mix(in srgb, var(--text-color) 24%, transparent)');
+                root.setProperty('--text-muted', 'color-mix(in srgb, var(--text-color) 68%, transparent)');
             }
             if (accent) {
                 root.setProperty('--primary-color', accent);
