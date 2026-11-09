@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-finish-surface="card">
 <head>
+    <script src="https://ayetinvakti.github.io/finish.js?v=5"></script>
     <script src="https://ayetinvakti.github.io/menu.js" defer></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -39,12 +40,20 @@
             const text = localStorage.getItem('custom_text');
             const accent = localStorage.getItem('custom_accent');
             if (bg) root.setProperty('--bg-color', bg);
+            // Özel arka plan varsa tüm yüzeyler (üst çubuk, balonlar, kutular) mod rengi yerine ondan türetilir;
+            // böylece açık modda bile koyu özel zeminde yazılar okunur kalır. Ayrı kart rengi seçilmişse o kullanılır.
+            if (bg && !card) root.setProperty('--chat-bg', bg);
             if (card) root.setProperty('--chat-bg', card);
             if (text) root.setProperty('--text-color', text);
             // Özel arka plan var, yazı rengi seçilmemişse: okunabilir yazı rengi otomatik
             if (bg && !text) {
                 const l = hexLum(bg);
                 if (l !== null) root.setProperty('--text-color', l > 0.45 ? '#1e293b' : '#f8fafc');
+            }
+            if (bg || card) {
+                root.setProperty('--bot-msg-bg', 'color-mix(in srgb, var(--text-color) 10%, ' + (card || bg) + ')');
+                root.setProperty('--border-color', 'color-mix(in srgb, var(--text-color) 24%, transparent)');
+                root.setProperty('--text-muted', 'color-mix(in srgb, var(--text-color) 68%, transparent)');
             }
             if (accent) {
                 root.setProperty('--primary-color', accent);
@@ -192,13 +201,13 @@
 
     <header>
         <div style="display:flex;align-items:center;gap:8px;">
-            <a href="https://ayetinvakti.github.io/" class="nav-btn" id="back-btn" aria-label="Ana Sayfaya Dön" title="Geri">←</a>
-            <button class="nav-btn" data-drawer-toggle aria-label="Menü" aria-controls="avmDrawer" title="Menü">☰</button>
+            <a href="https://ayetinvakti.github.io/" class="nav-btn fin-btn" id="back-btn" aria-label="Ana Sayfaya Dön" title="Geri">←</a>
+            <button class="nav-btn fin-btn" data-drawer-toggle aria-label="Menü" aria-controls="avmDrawer" title="Menü">☰</button>
             <h1 id="header-title">🤖 Vakit Asistanı</h1>
         </div>
         <div class="nav-controls">
-            <button class="nav-btn" onclick="newChat()" id="newChatBtn" title="Yeni sohbet" aria-label="Yeni sohbet">🗑️</button>
-            <button class="nav-btn" onclick="toggleTheme()" id="themeIcon">☀️</button>
+            <button class="nav-btn fin-btn" onclick="newChat()" id="newChatBtn" title="Yeni sohbet" aria-label="Yeni sohbet">🗑️</button>
+            <button class="nav-btn fin-btn" onclick="toggleTheme()" id="themeIcon">☀️</button>
         </div>
     </header>
 
@@ -207,7 +216,7 @@
 
     <div class="input-container">
         <input type="text" id="userInput" placeholder="..." autocomplete="off" enterkeyhint="send">
-        <button id="send-btn" onclick="sendMessage()">Gönder</button>
+        <button id="send-btn" class="fin-btn" onclick="sendMessage()">Gönder</button>
     </div>
 
     <script>
@@ -293,41 +302,16 @@ const KB = {
     en: [['h','Pillars of Islam (5)'],['ol',['Declaring the shahada','Performing prayer','Fasting','Giving zakat','Going on pilgrimage (hajj)']],['src',S32]],
     ar: [['h','أركان الإسلام (5)'],['ol',['الشهادتان','إقامة الصلاة','الصوم','إيتاء الزكاة','الحج']],['src',S32]],
     follow: ['iman','farz32'] },
-  namazboz: { re: [/namaz\w* (boz|bozan|bozulur)|what (breaks|invalidates) (the )?(prayer|salah|salat)|مبطلات الصلاه|يبطل الصلاه/],
-    tr: [['h','Namazı Bozan Durumlar (12)'],['ol',['Abdestin bozulması','Namazda konuşmak','Dışarıdan bakana namazda olunmadığı izlenimi verecek davranış (amel-i kesîr)','Kıbleden başka yöne dönmek','Yiyip içmek','Özürsüz öksürmeye çalışmak','Huşû dışında inlemek','Namazda gülmek (Hanefîlere göre yalnız kendinin duyacağı kadar gülmek bile namazı bozar; yanındakiler de duyarsa abdest de bozulur)','Sabah namazı kılarken güneşin doğması','Bayram namazı kılarken zeval vaktinin başlaması','Cuma namazı kılarken ikindi vaktinin girmesi','Kişinin iradesi dışında meydana gelen bazı durumlar']],['note',MEZHEP.tr],['note','Ayrıntılar için Diyanet’e başvur.'],['src','Diyanet İslam Ansiklopedisi (islamveihsan.com/namazi-bozan-durumlar.html)']],
-    en: [['h','What Invalidates the Prayer (12)'],['ol',['Breaking wudu','Speaking in prayer','Excessive movement that makes it look as if one is not praying','Turning away from the Qibla','Eating or drinking','Coughing without excuse','Moaning, other than from humility','Laughing in prayer (in the Hanafi school even laughing audibly only to oneself; if others hear, wudu breaks too)','Sunrise during the dawn prayer','Zawal time beginning during the Eid prayer','Asr time entering during the Friday prayer','Certain involuntary situations']],['note',MEZHEP.en],['note','For details consult Diyanet.'],['src','Diyanet Encyclopedia of Islam (islamveihsan.com)']],
-    ar: [['h','مبطلات الصلاة (12)'],['ol',['انتقاض الوضوء','الكلام في الصلاة','العمل الكثير','الانحراف عن القبلة','الأكل والشرب','التنحنح بلا عذر','الأنين لغير خشوع','الضحك في الصلاة (عند الحنفية ولو سمع نفسه فقط؛ وإن سمعه غيره انتقض الوضوء أيضاً)','طلوع الشمس أثناء صلاة الفجر','دخول وقت الزوال أثناء صلاة العيد','دخول وقت العصر أثناء صلاة الجمعة','بعض الأحوال القهرية']],['note',MEZHEP.ar],['note','للتفاصيل راجع الديانة.'],['src','موسوعة الديانة الإسلامية (islamveihsan.com)']],
-    pages: ['ilmihal','ogretmen'], follow: ['namazfarz','abdestboz'] },
-  orucboz: { re: [/oruc\w* (boz|bozan|bozulur|kefaret|kaza)|what breaks (the )?fast|kaffarah|مفطرات|يفطر/],
-    tr: [['h','Orucu Bozan Durumlar (temel hükümler)'],['ul',['Yemek, içmek ve cinsel ilişki orucu bozar','Ramazan günü oruçlu iken cinsel ilişki: hem kazâ hem kefâret gerektirir','Yolculuk, hastalık gibi meşrû bir mazerete dayalı olarak bozulan orucun yalnız kazâsı gerekir']],['note','Hangi durumların yalnız kazâ, hangilerinin kefâret gerektirdiği ve kefâretin nasıl ödeneceği gibi ayrıntılar için Diyanet’e başvur; burada yalnızca doğrulanmış temel hükümleri veriyorum.'],['note',MEZHEP.tr],['src','Diyanet İslam İlmihali 1. Cilt (sorularlaislamiyet.com) · Diyanet Fetva Kurulu (islamveihsan.com)']],
-    en: [['h','What Breaks the Fast (core rulings)'],['ul',['Eating, drinking and sexual intercourse break the fast','Intercourse while fasting on a day of Ramadan requires both making up the day (qaḍā) and expiation (kaffārah)','A fast broken because of a legitimate excuse such as travel or illness requires only making up the day']],['note','For which cases need only qaḍā, which need kaffārah, and how it is paid, consult Diyanet; here I give only the verified core rulings.'],['note',MEZHEP.en],['src','Diyanet İslam İlmihali vol. 1 · Diyanet Fatwa Board']],
-    ar: [['h','مفطرات الصوم (الأحكام الأساسية)'],['ul',['الأكل والشرب والجماع تفطّر','الجماع في نهار رمضان يوجب القضاء والكفارة معاً','ما أُفطر لعذر شرعي كالسفر والمرض ففيه القضاء فقط']],['note','لتفاصيل ما يوجب القضاء فقط وما يوجب الكفارة وكيفية أدائها راجع الديانة؛ أذكر هنا الأحكام الأساسية الموثقة فقط.'],['note',MEZHEP.ar],['src','علم الحال للديانة التركية · هيئة الفتوى']],
-    pages: ['imsakiye','ilmihal'], follow: ['namazboz','abdestboz'] },
-  abdestboz: { re: [/abdest\w* (boz|bozan|bozulur)|what (breaks|invalidates) wudu|nawaqid|نواقض الوضوء|ينقض الوضوء/],
-    tr: [['h','Abdesti Bozan Durumlar'],['ol',['Ön ve arkadan idrar, dışkı gelmesi ve arkadan yel çıkması','Vücudun herhangi bir yerinden kan ve irin akması (Şâfiîlere göre ön ve arka hariç bozmaz)','Ağız dolusu kusmak','Yatarak, yaslanarak veya bir şeye dayanarak uyumak','Bayılmak','Delirmek, çıldırmak','Sarhoş olmak','Namazda kahkaha ile gülmek (tebessüm bozmaz)','Fâhiş mübâşeret: erkek ve kadının aralarında perde olmadan tenasül organlarının birbirine dokunması']],['note',MEZHEP.tr],['note','Ayrıntılar (miktar, istisnalar) için Diyanet’e başvur.'],['src','Diyanet, İslam İlmihali (islamveihsan.com/abdesti-bozan-seyler-sunlardir.html)']],
-    en: [['h','What Breaks Wudu'],['ol',['Urine or stool coming out, and passing wind','Blood or pus flowing from any part of the body (in the Shafi‘i school only from the front and back passages)','Vomiting a mouthful','Sleeping lying down, leaning or propped up','Fainting','Losing one’s mind','Intoxication','Laughing aloud in prayer (a smile does not break it)','Direct contact of the private parts of a man and woman without a barrier']],['note',MEZHEP.en],['note','For details (amounts, exceptions) consult Diyanet.'],['src','Diyanet, İslam İlmihali (islamveihsan.com)']],
-    ar: [['h','نواقض الوضوء'],['ol',['خروج البول والغائط والريح','سيلان الدم والقيح من أي موضع في البدن (عند الشافعية من السبيلين فقط)','القيء ملء الفم','النوم مضطجعاً أو متكئاً','الإغماء','الجنون','السكر','القهقهة في الصلاة (التبسم لا ينقض)','المباشرة الفاحشة بين الرجل والمرأة بلا حائل']],['note',MEZHEP.ar],['note','للتفاصيل راجع الديانة.'],['src','الديانة التركية، علم الحال (islamveihsan.com)']],
-    pages: ['ilmihal'], follow: ['abdest','gusul'] },
   abdest: { re: [/abdest|wudu|wudhu|ablution|وضو|توضا/],
     tr: [['h','Abdestin Farzları (4)'],['ol',['Yüzünü yıkamak','Ellerini dirsekleriyle beraber yıkamak','Başının dörtte birini meshetmek','Ayaklarını topuklarıyla beraber yıkamak']],['note','Sünnetleri, adabı ve abdesti bozan durumlar için İlmihal sayfasına veya Diyanet’e başvur; burada yalnızca doğrulanmış farzları veriyorum.'],['note',MEZHEP.tr],['src',S32]],
     en: [['h','Obligations of Wudu (4)'],['ol',['Wash the face','Wash the arms including the elbows','Wipe a quarter of the head','Wash the feet including the ankles']],['note','For the sunnahs, etiquette and what breaks wudu, see the Ilmihal page or Diyanet; here I only give the verified obligations.'],['note',MEZHEP.en],['src',S32]],
     ar: [['h','فرائض الوضوء (4)'],['ol',['غسل الوجه','غسل اليدين مع المرفقين','مسح ربع الرأس','غسل الرجلين مع الكعبين']],['note','لسنن الوضوء وآدابه ونواقضه راجع صفحة العلم والحال أو الديانة؛ أذكر هنا الفرائض الموثقة فقط.'],['note',MEZHEP.ar],['src',S32]],
     ayahs: ['5:6'], pages: ['ilmihal','ogretmen'], follow: ['gusul','namazfarz'] },
-  guslugerek: { re: [/gusul\w* (gerektir|gerek|lazim|farz|ne zaman|hangi)|ne zaman gusul|hangi durumlarda gusul|when is ghusl|what requires ghusl|موجبات الغسل|متى يجب الغسل/],
-    tr: [['h','Guslü Gerektiren Haller'],['ol',['Cünüplük: cinsel ilişki veya meninin şehvetle gelmesi (rüyada ya da uyanıkken)','Hayız (âdet) hâlinin sona ermesi','Nifas (lohusalık) hâlinin sona ermesi']],['note','Gusül gerekmediği hâllerde bile cuma ve bayram namazları için gusletmek sünnettir.'],['note',MEZHEP.tr],['src','Diyanet İslam İlmihali · Diyanet İslam Ansiklopedisi (islamveihsan.com/gusul-abdesti-gerektiren-haller.html)']],
-    en: [['h','What Requires Ghusl'],['ol',['Janābah: sexual intercourse, or emission of semen with desire (in sleep or awake)','The end of menstruation (ḥayḍ)','The end of postnatal bleeding (nifās)']],['note','Even when ghusl is not required, it is sunnah for the Friday and Eid prayers.'],['note',MEZHEP.en],['src','Diyanet İslam İlmihali · Diyanet Encyclopedia of Islam']],
-    ar: [['h','موجبات الغسل'],['ol',['الجنابة: الجماع أو خروج المني بشهوة (في النوم أو اليقظة)','انقطاع الحيض','انقطاع النفاس']],['note','والاغتسال لصلاتي الجمعة والعيد سنة ولو لم يوجد موجب.'],['note',MEZHEP.ar],['src','علم الحال للديانة · موسوعة الديانة الإسلامية']],
-    pages: ['ilmihal'], follow: ['gusul','abdestboz'] },
   gusul: { re: [/gusul|boy abdest|ghusl|غسل|جنابه/],
     tr: [['h','Guslün Farzları (3)'],['ol',['Ağzına su vermek','Burnuna su vermek','Bütün bedenini yıkamak']],['note','Hangi hâllerde gusül gerektiği ve ayrıntılar için İlmihal sayfasına veya Diyanet’e başvur.'],['note',MEZHEP.tr],['src',S32]],
     en: [['h','Obligations of Ghusl (3)'],['ol',['Rinse the mouth','Rinse the nose','Wash the entire body']],['note','For when ghusl is required and further details, see the Ilmihal page or Diyanet.'],['note',MEZHEP.en],['src',S32]],
     ar: [['h','فرائض الغسل (3)'],['ol',['المضمضة','الاستنشاق','غسل جميع البدن']],['note','لمعرفة موجبات الغسل وتفاصيله راجع صفحة العلم والحال أو الديانة.'],['note',MEZHEP.ar],['src',S32]],
     pages: ['ilmihal'], follow: ['abdest','teyemmum'] },
-  teyemmumboz: { re: [/teyemmum\w* (boz|bozan|bozulur)|what (breaks|invalidates) tayammum|ينقض التيمم|نواقض التيمم/],
-    tr: [['h','Teyemmümü Bozan Şeyler (3)'],['ol',['Abdesti bozan şeyler (ve guslü gerektiren durumlar) teyemmümü de bozar','Abdest veya gusül için yeterli su bulunur ve kullanılması mümkün olursa teyemmüm bozulur','Teyemmümü mübah kılan özür ortadan kalkarsa teyemmüm bozulur (ör. hastalık nedeniyle su kullanamayan kişi iyileşirse)']],['note',MEZHEP.tr],['src','Diyanet, İslam İlmihali (islamveihsan.com/teyemmumu-bozan-seyler.html) · Diyanet Fetva Kurulu']],
-    en: [['h','What Breaks Tayammum (3)'],['ol',['Whatever breaks wudu (and what requires ghusl) also breaks tayammum','Tayammum is broken when enough water for wudu or ghusl is found and can be used','Tayammum is broken when the excuse that permitted it ends (e.g. a person who could not use water because of illness recovers)']],['note',MEZHEP.en],['src','Diyanet, İslam İlmihali (islamveihsan.com) · Diyanet Fatwa Board']],
-    ar: [['h','نواقض التيمم (3)'],['ol',['كل ما ينقض الوضوء (وما يوجب الغسل) ينقض التيمم','وجود ماء يكفي للوضوء أو الغسل مع إمكان استعماله','زوال العذر المبيح للتيمم (كمن عجز عن استعمال الماء لمرض ثم شُفي)']],['note',MEZHEP.ar],['src','الديانة التركية، علم الحال (islamveihsan.com)']],
-    pages: ['ilmihal'], follow: ['teyemmum','abdestboz'] },
   teyemmum: { re: [/teyemmum|tayammum|تيمم/],
     tr: [['h','Teyemmümün Farzları (2)'],['ol',['Niyet etmek','İki elin içini temiz toprağa sürüp yüzün tamamını mesh etmek; tekrar elleri temiz toprağa vurup önce sağ, sonra sol kolu mesh etmek']],['note','Hangi durumda teyemmüm yapılacağı için İlmihal sayfasına veya Diyanet’e başvur.'],['note',MEZHEP.tr],['src',S32]],
     en: [['h','Obligations of Tayammum (2)'],['ol',['Make the intention','Strike the palms on clean earth and wipe the whole face; strike again and wipe the right arm, then the left']],['note','For when tayammum applies, see the Ilmihal page or Diyanet.'],['note',MEZHEP.en],['src',S32]],
@@ -564,19 +548,6 @@ async function kbReply(id, n) {
 // ---- Sohbet katmanı (dini içerik DEĞİL; selamlaşma, hal hatır, saat/tarih vb.) ----
 const rndOf = a => a[Math.floor(Math.random() * a.length)];
 const SMALL = [
-  { re: /^(ve )?(aleykum ?selam|aleykumselam|aleykum selam ve rahmetullah|wa ?alaikum|wa ?alaykum|waalaikum|وعليكم السلام|و عليكم السلام)/,
-    tr: ['Ve aleykümselâm ve rahmetullâh! Hoş geldin, nasıl yardımcı olabilirim?', 'Aleykümselâm! Nasılsın, bugün sana nasıl yardımcı olabilirim?'],
-    en: ['Wa alaikum assalam wa rahmatullah! Welcome, how can I help?'], ar: ['وعليكم السلام ورحمة الله! أهلاً بك، كيف أساعدك؟'] },
-  { re: /^(ben de |bende |ben |cok |gayet |valla |elhamdulillah |hamdolsun )?(iyiyim|iyi|harikayim|gayet iyiyim|fena degilim|i'?m (good|fine|great)|i am (good|fine|great)|fine|good|بخير|الحمد لله)( ya| sag ol| tesekkurler| sen)?$/,
-    tr: ['Sevindim, Allah daim etsin! Sana nasıl yardımcı olabilirim?', 'Çok güzel, buna sevindim. Bir âyet ya da temel bir bilgi ister misin?'],
-    en: ['Glad to hear it! How can I help you?'], ar: ['يسعدني ذلك! كيف أساعدك؟'] },
-  { re: /^(ben )?(kotuyum|iyi degilim|idare eder|pek iyi degilim|yorgunum|uzgunum|not (so )?good|i'?m (sad|tired)|لست بخير|تعبان|حزين)/,
-    tr: ['Üzüldüm, geçmiş olsun. İstersen anlat, dinlerim; istersen sana kalbe huzur veren bir âyet getireyim. Ağırlaşırsa güvendiğin birine de ulaşmanı öneririm.'],
-    en: ['I am sorry to hear that. Tell me if you like, or I can fetch a verse about peace of heart. If it feels heavy, please reach out to someone you trust.'], ar: ['أحزنني ذلك. إن شئت فتحدث إليّ، أو أجلب لك آية عن طمأنينة القلب. وإن اشتد عليك فتواصل مع شخص تثق به.'] },
-  { re: /^(tamam|tamamdir|olur|anladim|peki|ok|okay|ya tamam|anlasildi|got it|alright|حسنا|تمام|فهمت)( ustam| hocam| sag ol)?$/,
-    tr: ['Tamam! Başka bir sorun olursa buradayım.', 'Güzel. Aklına takılan başka bir şey olursa yaz.'], en: ['Okay! I am here if you need anything else.'], ar: ['حسناً! أنا هنا إن احتجت شيئاً آخر.'] },
-  { re: /^(hayirli (isler|sabahlar|aksamlar|geceler|cumalar|kandiller|ramazanlar)|iyi aksamlar|iyi gunler|good (evening|afternoon))/,
-    tr: ['Size de, Allah hayırlı eylesin! Nasıl yardımcı olabilirim?'], en: ['And to you! How can I help?'], ar: ['وإياك! كيف أساعدك؟'] },
   { re: /nasilsin|naber|ne haber|nasil gidiyor|how are you|how'?s it going|what'?s up|كيف حالك|كيفك|شلونك/,
     tr: ['İyiyim, sorduğun için sağ ol! Senin günün nasıl geçiyor?', 'Çok iyiyim, hizmetinde olmak güzel. Sen nasılsın?', 'Elhamdülillah iyiyim. Seni dinliyorum; bir şey sormak ister misin?'],
     en: ['I am doing well, thank you for asking! How is your day going?', 'Great, glad to be here. How are you?'],
@@ -735,7 +706,7 @@ function renderBlocks(box, blocks) {
     else if (k === 'note') { box.appendChild(el('div', 'b-note', v)); plain.push(v); }
     else if (k === 'src') { box.appendChild(el('div', 'b-src', '📚 ' + v)); plain.push(v); }
     else if (k === 'ayah') {
-      const c = el('div', 'ayah-card');
+      const c = el('div', 'ayah-card fin-card');
       if (v.ar) c.appendChild(el('div', 'ayah-ar', v.ar));
       if (v.tr) c.appendChild(el('div', 'ayah-tr', v.tr));
       c.appendChild(el('div', 'ayah-ref', v.ref));
