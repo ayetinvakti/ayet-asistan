@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#0f172a" id="themeColorMeta">
-    <title>Ayetin Vakti - Yapay Zeka Asistanı</title>
+    <title>Vakit Asistanı | Ayetin Vakti</title>
     <meta name="description" content="Ayet arama, namaz ve temel dini bilgiler için kaynak belirten soru-cevap asistanı. Ücretsiz ve reklamsız.">
     <link rel="canonical" href="https://ayetinvakti.github.io/ayet-asistan/">
     <meta name="robots" content="index, follow, max-image-preview:large">
@@ -391,7 +391,7 @@ const TOPIC_AYAH = {
 
 // ---- Arayüz metinleri ----
 const UI = {
-  tr: { docTitle: 'Ayetin Vakti - Yapay Zeka Asistanı', headerTitle: '🤖 Vakit Asistanı', ph: 'Dini bir soru sor, ayet ara…', send: 'Gönder', newChat: 'Yeni sohbet', copy: '📋 Kopyala', copied: '✓ Kopyalandı',
+  tr: { docTitle: 'Vakit Asistanı | Ayetin Vakti', headerTitle: '🤖 Vakit Asistanı', ph: 'Dini bir soru sor, ayet ara…', send: 'Gönder', newChat: 'Yeni sohbet', copy: '📋 Kopyala', copied: '✓ Kopyalandı',
     welcome: [['p','Selâmün aleyküm! Ben Vakit Asistanı. Şunlarda yardımcı olabilirim:'],['ul',['**Kur’an:** “Bakara 255”, “Yâsîn 1-5”, “Ayetel Kürsî” yaz ya da “sabır ile ilgili ayet” de; âyet metni ve Diyanet meali canlı olarak getirilir.','**Temel ibadet bilgileri:** 32 farz, abdest, gusül, namazın farzları, rekât sayıları.','**Site rehberi:** namaz vakitleri, kıble, zekât, dualar, hutbe ve diğer sayfalara yönlendirme.']],['note','Cevap vermeden önce kaynağı doğrulanamayan bilgiyi vermem; bilmediğim konuda tahmin yürütmem. Fetva yerine geçmez; fıkhî hükümler için Diyanet’e (Alo 190, il/ilçe müftülükleri) danış. Âyet aramalarında yazdığın kelime/âyet bilgisi alquran.cloud servisine gönderilir.']],
     typing: '…', err: 'Kur’an servisine (alquran.cloud) ulaşılamadı. İnternet bağlantını kontrol edip tekrar dene; âyetleri Kur’an Oku sayfasından da okuyabilirsin.',
     noAyah: 'Bu referansla bir âyet bulunamadı. Sure ve âyet numarasını kontrol et (ör. “Bakara 255” veya “2:255”).',
@@ -405,7 +405,7 @@ const UI = {
     crisis: [['p','Yaşadığın şey çok ağır görünüyor; bunu yazdığın için sağ ol. Şu an güvende olmak çok önemli.'],['p','Kendine zarar verme düşüncen varsa lütfen hemen **112**’yi ara ya da yanındaki güvendiğin birine ulaş. Yalnız değilsin; buradan sonra da yazabilirsin.']],
     seeSite: 'Sayfaya git', openDiyanet: 'Diyanet', ayahSrc: 'Âyet metni: alquran.cloud', ask: 'Sorabileceğin başka bir şey var mı?', searchChip: (kw) => `“${kw}” için ayet ara`,
     chips: [['⏰ Namaz Vakitleri','Namaz vakitleri'],['💧 Abdest','Abdestin farzları nelerdir?'],['📖 Ayetel Kürsî','Ayetel Kürsî'],['🔎 Sabır ayetleri','Sabır ile ilgili ayet'],['🕌 Namazın Farzları','Namazın farzları'],['🔢 Rekât Sayıları','Rekât sayıları'],['🤲 Zekât','Zekât kimlere verilir?'],['🧭 Kıble','Kıbleyi nasıl bulabilirim?'],['🧩 32 Farz','32 farz nedir?'],['❓ Neler yapabilirsin?','Neler yapabilirsin?']] },
-  en: { docTitle: 'Time of Ayah - AI Assistant', headerTitle: '🤖 Time Assistant', ph: 'Ask a religious question or search a verse…', send: 'Send', newChat: 'New chat', copy: '📋 Copy', copied: '✓ Copied',
+  en: { docTitle: 'Time Assistant | Ayetin Vakti', headerTitle: '🤖 Time Assistant', ph: 'Ask a religious question or search a verse…', send: 'Send', newChat: 'New chat', copy: '📋 Copy', copied: '✓ Copied',
     welcome: [['p','Assalamu alaikum! I am the Time Assistant. I can help with:'],['ul',['**Quran:** type “2:255”, “Ayat al-Kursi”, or “verses about patience”; the verse text and translation are fetched live.','**Core worship facts:** the 32 fards, wudu, ghusl, obligations of prayer, rak‘ah counts.','**Site guide:** prayer times, Qibla, zakat, supplications, khutbah and other pages.']],['note','I do not give religious information I cannot verify, and I do not guess. This is not a fatwa; for rulings ask Diyanet (Alo 190, local muftis). When you search verses, your search term/reference is sent to the alquran.cloud service. Detailed answers on some topics are available in Turkish first.']],
     typing: '…', err: 'Could not reach the Quran service (alquran.cloud). Check your connection and try again; you can also read verses on the Read Quran page.',
     noAyah: 'No verse found for that reference. Check the surah and verse number (e.g. “2:255”).',
@@ -419,7 +419,7 @@ const UI = {
     crisis: [['p','What you describe sounds very heavy, and I am glad you wrote it. Your safety matters most right now.'],['p','If you are thinking of harming yourself, please call your local emergency number now (**112** in Turkey) or reach someone you trust. You are not alone, and you can keep writing here too.']],
     seeSite: 'Open page', openDiyanet: 'Diyanet', ayahSrc: 'Verse text: alquran.cloud', ask: 'Anything else?', searchChip: (kw) => `Search verses for “${kw}”`,
     chips: [['⏰ Prayer Times','Prayer times'],['💧 Wudu','What are the obligations of wudu?'],['📖 Ayat al-Kursi','Ayat al-Kursi'],['🔎 Patience','Verses about patience'],['🕌 Prayer Obligations','Obligations of prayer'],['🔢 Rak‘ah Counts','Rak‘ah counts'],['🤲 Zakat','Who receives zakat?'],['🧭 Qibla','How can I find the Qibla?'],['🧩 32 Fards','What are the 32 fards?'],['❓ What can you do?','What can you do?']] },
-  ar: { docTitle: 'وقت الآية - المساعد الذكي', headerTitle: '🤖 مساعد الوقت', ph: 'اسأل سؤالاً دينياً أو ابحث عن آية…', send: 'إرسال', newChat: 'محادثة جديدة', copy: '📋 نسخ', copied: '✓ تم النسخ',
+  ar: { docTitle: 'مساعد الوقت | وقت الآية', headerTitle: '🤖 مساعد الوقت', ph: 'اسأل سؤالاً دينياً أو ابحث عن آية…', send: 'إرسال', newChat: 'محادثة جديدة', copy: '📋 نسخ', copied: '✓ تم النسخ',
     welcome: [['p','السلام عليكم ورحمة الله! أنا مساعد الوقت. يمكنني مساعدتك في:'],['ul',['**القرآن:** اكتب «2:255» أو «آية الكرسي» أو «آيات عن الصبر»؛ يُجلب نص الآية وترجمتها مباشرة.','**أساسيات العبادة:** الفرائض الاثنان والثلاثون، الوضوء، الغسل، فرائض الصلاة، عدد الركعات.','**دليل الموقع:** مواقيت الصلاة، القبلة، الزكاة، الأدعية، الخطبة وغيرها.']],['note','لا أقدّم معلومة دينية لا يمكن التحقق من مصدرها ولا أخمّن. هذا ليس فتوى؛ للأحكام راجع الديانة (Alo 190) أو دار الإفتاء المحلية. عند البحث عن الآيات يُرسل المرجع/الكلمة إلى خدمة alquran.cloud. بعض التفاصيل متاحة بالتركية أولاً.']],
     typing: '…', err: 'تعذّر الوصول إلى خدمة القرآن (alquran.cloud). تحقق من الاتصال وحاول مجدداً، أو اقرأ الآيات من صفحة قراءة القرآن.',
     noAyah: 'لم أجد آية بهذا المرجع. تحقق من رقم السورة والآية (مثل «2:255»).',
